@@ -2,6 +2,10 @@
 | --- | --- |
 KH.010.000 | 2025-02-27 |
 
+## Knowledge Hub
+
+Luminary, under the code name Knowledge Hub is a web-based platform for enthusiasts of books to be provided a wide digital library. It provides a hub for them to engage in a convenient reading experience as well as exchange their thoughts in a dedicated discussion room. It is built using Next.JS for the Frontend and ExpressJS with MongoDB and Google Cloud Platform for the backend/database. 
+
 ## KH.010.000 Release Notes
 - First commit
 - Initialized Next.JS Project using npm install create-next-app.
@@ -12,6 +16,13 @@ KH.010.000 | 2025-02-27 |
 - Implement routes for each schema in the database.
 - Implement mongoose models for each schema in the database.
 - Implement controllers for each schema in the database.
+- The controllers implemented CRUD operations for the following models: 
+- - Books 
+- - Users
+- - Authors
+- - Bookmarks
+- - Reviews 
+- - Notes
 
 Known Issues:
 
