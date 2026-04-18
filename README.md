@@ -29,6 +29,21 @@ Known Issues:
 - Proper error middleware is not implemented.
 - Authorization is not complete.
 
+## KH.010.002 Release Notes
+
+- Implement authentication using generation of JWT access tokens stored in Cookies and JWT refresh tokens stored in the database.
+
+- Authorization middleware implemented for specific routes.
+
+Known Issues:
+
+- Proper error-handling middleware is not implemented.
+- Google OAuth Authentication incomplete.
+
+Plans for Future Updates:
+
+- Implement routes and controllers handling Gemini API for smart annotation.
+
 
 Important Links:
 
