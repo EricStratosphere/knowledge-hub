@@ -39,6 +39,7 @@ Known Issues:
 
 - Proper error-handling middleware is not implemented.
 - Google OAuth Authentication incomplete.
+- JWT authentication implemented is primitive, no proper verification of E-mail on Sign-up.
 
 Plans for Future Updates:
 
