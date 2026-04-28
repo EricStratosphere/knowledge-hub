@@ -45,6 +45,20 @@ Plans for Future Updates:
 
 - Implement routes and controllers handling Gemini API for smart annotation.
 
+## KH.010.003 Release Notes
+
+- Implement Gemini API for the smart annotation Chatbot. 
+- Implement specific models for Gemini API Request and Response Schemas.
+- Implement routes for Gemini API and fetching conversation history.
+- Include image understanding for the Gemini API.
+
+Known Issues:
+- None so far.
+
+Plans for Future Updates:
+
+- Implement Image generation from the API.
+
 
 Important Links:
 
