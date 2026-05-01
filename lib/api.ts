@@ -1,5 +1,5 @@
 // lib/api.ts
-import { Book, Author, ApiResponse, User, Collection, Comment } from '@/types';
+import { Book, Author, ApiResponse, User, Bookmark, Note, Collection, Comment } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://luminary-backend-chi.vercel.app/api/v1'; // 
 
@@ -48,8 +48,13 @@ export const deleteAuthor = (id: string) => fetcher<void>(`/authors/delete/${id}
 export const createCollection = (data: Partial<Collection>) => fetcher<Collection>('/collections', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]
 export const deleteCollection = (id: string) => fetcher<void>(`/collections/delete/${id}`, { method: 'DELETE' }); //[cite: 2]
 
-
 // --- BOOKMARKS ---
+export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`); //[cite: 2]
 
 // --- COMMENTS & NOTES ---
 export const createComment = (data: Partial<Comment>) => fetcher<Comment>('/comments', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]
+export const getNotesByBookAndUser = (bookId: string, userId: string) => fetcher<Note[]>(`/notes/book/${bookId}/user/${userId}`); //[cite: 2]
+
+// --- GEMINI CHATBOT ---
+export const getChatContext = (bookId: string, userId: string) => fetcher<any>(`/gemini-chatbot/conversation/${bookId}/${userId}`); //[cite: 2]
+export const sendChatPrompt = (data: any) => fetcher<any>('/gemini-chatbot/prompt-text', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]

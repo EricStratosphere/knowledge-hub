@@ -6,7 +6,7 @@ export interface Author {
   author_description: string;
   createdAt: string;
   updatedAt: string;
-} // [cite: 6]
+} 
 
 export interface Book {
   _id: string;
@@ -17,7 +17,7 @@ export interface Book {
   description: string;
   image_url: string;
   pdf_url: string;
-} // [cite: 16]
+} 
 
 export interface User {
   _id: string;
@@ -33,14 +33,14 @@ export interface Bookmark {
   _id: string;
   book_id: string;
   user_id: string;
-  page: number; // Added from updated README
+  page: number; 
 }
 
 export interface Collection {
   _id: string;
   name: string;
   user_id: string;
-  public: boolean; // Added from updated README[cite: 1, 2]
+  public: boolean;
 }
 
 export interface Comment {
@@ -63,7 +63,7 @@ export interface Note {
   page: number;
 }
 
-// Generic response wrapper based on your API's pattern
+// Generic response wrapper based on API's pattern
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
