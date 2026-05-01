@@ -1,5 +1,5 @@
 // lib/api.ts
-import { Book, Author, ApiResponse, Collection, Comment } from '@/types';
+import { Book, Author, ApiResponse, User, Collection, Comment } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://luminary-backend-chi.vercel.app/api/v1'; // 
 
@@ -20,10 +20,14 @@ async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiR
 }
 
 // --- AUTHENTICATION ROUTES ---
-
+export const signup = (data: any) => fetcher<User>('/authenticate/signup', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]
+export const login = (data: any) => fetcher<any>('/authenticate/login', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]
+export const refreshTokens = (data: any) => fetcher<any>('/authenticate/refresh', { method: 'POST', body: JSON.stringify(data) }); //[cite: 2]
+export const signout = () => fetcher<void>('/authenticate/signout', { method: 'POST' }); //[cite: 2]
 
 // --- USER ROUTES ---
-
+export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`); //[cite: 2]
+export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`); //[cite: 2]
 
 // --- BOOK ROUTES ---
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
