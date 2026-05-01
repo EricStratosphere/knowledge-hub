@@ -19,10 +19,23 @@ async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiR
   return res.json();
 }
 
+// --- AUTHENTICATION ROUTES ---
+
+
+// --- USER ROUTES ---
+
+
 // --- BOOK ROUTES ---
-export const getBooks = () => fetcher<Book[]>('/books'); // [cite: 16]
-export const getBookById = (id: string) => fetcher<Book>(`/books/${id}`); // [cite: 19]
+export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
+export const getBooksByAuthor = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); //[cite: 2]
+export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`); //[cite: 2]
 
 // --- AUTHOR ROUTES ---
-export const getAuthors = () => fetcher<Author[]>('/authors'); // [cite: 6]
-export const getAuthorById = (id: string) => fetcher<Author>(`/authors/${id}`); // [cite: 8]
+export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`); //
+export const searchAuthors = (name: string) => fetcher<Author[]>(`/authors/getbyname?q=${name}`); //
+
+// --- COLLECTIONS ---
+
+// --- BOOKMARKS ---
+
+// --- COMMENTS & NOTES ---
