@@ -65,6 +65,7 @@ Plans for Future Updates:
 - Implement new subroutes to the authenticate route for fetching and verifying OTP.
 - Implement new models for new OTP collection with TTL configuration.
 - Implement services for generating OTP and configuring nodemailer options.
+- For the frontend, API utilities have been implemented for each backend route.
 
 Known Issues:
 
