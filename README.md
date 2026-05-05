@@ -59,6 +59,17 @@ Plans for Future Updates:
 
 - Implement Image generation from the API.
 
+## KH.010.004 Release Notes
+
+- Install nodemailer for OTP Verification.
+- Implement new subroutes to the authenticate route for fetching and verifying OTP.
+- Implement new models for new OTP collection with TTL configuration.
+- Implement services for generating OTP and configuring nodemailer options.
+
+Known Issues:
+
+- Verify OTP finds existing documents by OTP. There is a possibility of duplicate OTP value entries present. 
+
 
 Important Links:
 
