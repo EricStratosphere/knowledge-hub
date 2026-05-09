@@ -35,7 +35,7 @@ export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyna
 // --- BOOK ROUTES ---
 export const getBooks = () => fetcher<Book[]>('/books');
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
-export const getBooksByAuthor = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`);
+export const getBooksByAuthorId = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); // Added
 export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`);
 export const createBook = (data: Partial<Book>) => fetcher<Book>('/books', { method: 'POST', body: JSON.stringify(data) });
 export const updateBook = (id: string, data: Partial<Book>) => fetcher<Book>(`/books/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -51,7 +51,7 @@ export const deleteAuthor = (id: string) => fetcher<void>(`/authors/delete/${id}
 
 // --- COLLECTIONS ---
 export const getCollectionEbooks = () => fetcher<any[]>('/collection-ebooks');
-export const getEbooksByCollectionId = (id: string) => fetcher<any[]>(`/collection-ebooks/getbycollectionid/${id}`);
+export const getEbooksByCollectionId = (collectionId: string) => fetcher<any[]>(`/collection-ebooks/getbycollectionid/${collectionId}`);
 export const addBookToCollection = (data: { collection_id: string, book_id: string }) => fetcher<any>('/collection-ebooks', { method: 'POST', body: JSON.stringify(data) });
 export const getUserCollections = (userId: string) => fetcher<Collection[]>(`/collections/user/${userId}`);
 export const searchCollections = (name: string) => fetcher<Collection[]>(`/collections/getbyname?q=${name}`);
@@ -70,5 +70,5 @@ export const getNoteById = (id: string) => fetcher<Note>(`/notes/getbyid/${id}`)
 export const getNotesByBookAndUser = (bookId: string, userId: string) => fetcher<Note[]>(`/notes/book/${bookId}/user/${userId}`);
 
 // --- GEMINI CHATBOT ---
-export const getChatContext = (bookId: string, userId: string) => fetcher<any>(`/gemini-chatbot/conversation/${bookId}/${userId}`);
+export const getConversationContext = (bookId: string, userId: string) => fetcher<any>(`/gemini-chatbot/conversation/${bookId}/${userId}`); // Added
 export const sendChatPrompt = (data: any) => fetcher<any>('/gemini-chatbot/prompt-text', { method: 'POST', body: JSON.stringify(data) });
