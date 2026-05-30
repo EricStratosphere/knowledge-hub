@@ -1,7 +1,7 @@
 // lib/api.ts
 import { Book, Author, ApiResponse, User, Bookmark, Note, Collection, Comment } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://luminary-backend-chi.vercel.app/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Helper function to handle fetch and errors
 async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
