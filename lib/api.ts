@@ -38,6 +38,19 @@ export const login = (data: any) => fetcher<any>('/authenticate/login', { method
 export const refreshTokens = (data: any) => fetcher<any>('/authenticate/refresh', { method: 'POST', body: JSON.stringify(data) });
 export const signout = () => fetcher<void>('/authenticate/signout', { method: 'POST' });
 
+// --- OTP AUTHENTICATION ---
+// Request OTP for an existing user
+export const getOtp = (email: string) => 
+  fetcher<any>('/authenticate/get-otp', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Request OTP during the sign-up process
+export const getOtpSignup = (email: string) => 
+  fetcher<any>('/authenticate/get-otp-signup', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Verify the numeric OTP code
+export const verifyOtp = (otp: number) => 
+  fetcher<any>('/authenticate/verify-otp', { method: 'POST', body: JSON.stringify({ otp }) });
+
 // --- USER ROUTES ---
 export const getUsers = () => fetcher<User[]>('/users');
 export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`);
