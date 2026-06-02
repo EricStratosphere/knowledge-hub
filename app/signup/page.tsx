@@ -219,7 +219,7 @@ export default function SignUpPage() {
 
           {/* Card Header */}
           <h2 className="font-luxury-serif text-3xl font-light text-white tracking-wide mb-8 select-none">
-            Sign up
+            {isOtpStep ? 'Verify Email' : 'Sign up'}
           </h2>
 
           {/* Validation Banner Messages */}
@@ -241,152 +241,224 @@ export default function SignUpPage() {
             </div>
           )}
 
-          {/* SignUp Submission Form */}
-          <form onSubmit={handleSubmit} className="space-y-6 font-jakarta">
-            
-            {/* Username Input Container */}
-            <div className="relative group transition-all duration-300">
-              <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
-                Username
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                disabled={isLoading}
-                placeholder="Enter username"
-                className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
-              />
-              {errors.username && (
-                <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  {errors.username}
+          {isOtpStep ? (
+            /* OTP Verification Screen */
+            <form onSubmit={handleVerifyAndRegister} className="space-y-6 font-jakarta animate-fade-in">
+              <div className="relative group transition-all duration-300">
+                <p className="text-xs text-white/50 leading-relaxed mb-6">
+                  Enter the 6-digit code sent to your email address.
                 </p>
-              )}
-            </div>
+                <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  name="otp"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => {
+                    setOtpCode(e.target.value.replace(/\D/g, ''));
+                    if (errors.otp) {
+                      setErrors((prev) => ({ ...prev, otp: undefined }));
+                    }
+                  }}
+                  disabled={isLoading}
+                  placeholder="000000"
+                  className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-center text-lg tracking-[0.5em] font-mono focus:ring-0 disabled:opacity-40"
+                />
+                {errors.otp && (
+                  <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {errors.otp}
+                  </p>
+                )}
+              </div>
 
-            {/* Email Input Container */}
-            <div className="relative group transition-all duration-300">
-              <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+              {/* Primary Action Submit Button */}
+              <button
+                type="submit"
                 disabled={isLoading}
-                placeholder="user@example.com"
-                className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
-              />
-              {errors.email && (
-                <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  {errors.email}
-                </p>
-              )}
-            </div>
+                className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3.5 rounded-md text-xs tracking-widest uppercase transition-all duration-300 disabled:opacity-40 mt-8 active:scale-[0.98] shadow-[0_8px_30px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-[#080B11]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify & Register'
+                )}
+              </button>
 
-            {/* Password Input Container */}
-            <div className="relative group transition-all duration-300">
-              <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={isLoading}
-                placeholder="••••••••"
-                className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
-              />
-              {errors.password && (
-                <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  {errors.password}
-                </p>
-              )}
-            </div>
-
-            {/* Premium Role Toggles */}
-            <div className="flex flex-col gap-4 pt-3.5">
+              {/* Go Back Option */}
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOtpStep(false);
+                    setOtpCode('');
+                    setErrors({});
+                  }}
+                  disabled={isLoading}
+                  className="text-xs text-white/40 hover:text-white transition-colors duration-300 underline underline-offset-4 cursor-pointer"
+                >
+                  Go back to edit info
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* SignUp Submission Form */
+            <form onSubmit={handleSubmit} className="space-y-6 font-jakarta">
               
-              {/* Writer Custom Slide Toggle */}
-              <label className="flex items-center justify-between group cursor-pointer select-none">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
-                    Become a Writer
-                  </span>
-                  <span className="text-[10px] text-white/30">
-                    Write, publish, and distribute ebooks
-                  </span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    name="is_writer"
-                    checked={formData.is_writer}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
-                  <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
-                </div>
-              </label>
+              {/* Username Input Container */}
+              <div className="relative group transition-all duration-300">
+                <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  placeholder="Enter username"
+                  className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
+                />
+                {errors.username && (
+                  <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {errors.username}
+                  </p>
+                )}
+              </div>
 
-              {/* Admin Custom Slide Toggle */}
-              <label className="flex items-center justify-between group cursor-pointer select-none">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
-                    Is Admin
-                  </span>
-                  <span className="text-[10px] text-white/30">
-                    Gain system administrator privileges
-                  </span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    name="is_admin"
-                    checked={formData.is_admin}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
-                  <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
-                </div>
-              </label>
-            </div>
+              {/* Email Input Container */}
+              <div className="relative group transition-all duration-300">
+                <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  placeholder="user@example.com"
+                  className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
+                />
+                {errors.email && (
+                  <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {errors.email}
+                  </p>
+                )}
+              </div>
 
-            {/* Primary Action Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3.5 rounded-md text-xs tracking-widest uppercase transition-all duration-300 disabled:opacity-40 mt-6 active:scale-[0.98] shadow-[0_8px_30px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2.5 cursor-pointer"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-[#080B11]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                'Sign up'
-              )}
-            </button>
-          </form>
+              {/* Password Input Container */}
+              <div className="relative group transition-all duration-300">
+                <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  placeholder="••••••••"
+                  className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2.5 text-white placeholder-white/20 text-sm focus:ring-0 disabled:opacity-40"
+                />
+                {errors.password && (
+                  <p className="text-rose-400/90 text-xs mt-1.5 font-medium flex items-center gap-1.5 animate-fade-in">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Premium Role Toggles */}
+              <div className="flex flex-col gap-4 pt-3.5">
+                
+                {/* Writer Custom Slide Toggle */}
+                <label className="flex items-center justify-between group cursor-pointer select-none">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
+                      Become a Writer
+                    </span>
+                    <span className="text-[10px] text-white/30">
+                      Write, publish, and distribute ebooks
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="is_writer"
+                      checked={formData.is_writer}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
+                    <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
+                  </div>
+                </label>
+
+                {/* Admin Custom Slide Toggle */}
+                <label className="flex items-center justify-between group cursor-pointer select-none">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
+                      Is Admin
+                    </span>
+                    <span className="text-[10px] text-white/30">
+                      Gain system administrator privileges
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="is_admin"
+                      checked={formData.is_admin}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
+                    <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
+                  </div>
+                </label>
+              </div>
+
+              {/* Primary Action Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3.5 rounded-md text-xs tracking-widest uppercase transition-all duration-300 disabled:opacity-40 mt-6 active:scale-[0.98] shadow-[0_8px_30px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-[#080B11]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Sign up'
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Navigation Redirect Footer */}
           <div className="text-center mt-8 pt-4 border-t border-white/[0.05]">
