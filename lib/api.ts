@@ -14,7 +14,18 @@ async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiR
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    let errorMessage = `API error: ${res.status}`;
+    try {
+      const errorData = await res.json();
+      if (errorData && typeof errorData.message === 'string') {
+        errorMessage = errorData.message;
+      } else if (errorData && typeof errorData.error === 'string') {
+        errorMessage = errorData.error;
+      }
+    } catch {
+      // Fallback if parsing fails or stream is empty
+    }
+    throw new Error(errorMessage);
   }
   return res.json();
 }
