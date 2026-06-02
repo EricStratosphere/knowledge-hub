@@ -83,17 +83,26 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // In Phase 3 we will integrate live API login flows
-      console.log('Sending Login Form Data:', formData);
+      const res = await login(formData);
       
-      // Temporary simulated flow for Phase 1 verification
-      setIsLoading(false);
-      setApiSuccess('Login state validation complete! Ready for Phase 2 styling.');
+      if (res.success) {
+        setApiSuccess(res.message || 'Signed in successfully! Redirecting...');
+        // Deliberate 1.5s delay so users can experience the success animations
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
+      } else {
+        setErrors({
+          apiError: res.message || 'Login failed. Please check your credentials.',
+        });
+      }
     } catch (error: any) {
-      setIsLoading(false);
+      // Handles network errors, non-200 responses from fetcher
       setErrors({
-        apiError: error.message || 'An unexpected error occurred during login.',
+        apiError: error.message || 'An unexpected error occurred. Please try again later.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
