@@ -8,7 +8,7 @@ import { signup } from '@/lib/api';
 export interface SignUpFormData {
   username: string;
   email: string;
-  password?: string; // Optional field for safety, though required by form
+  password: string; // Required field
   is_admin: boolean;
   is_writer: boolean;
 }
@@ -75,10 +75,9 @@ export default function SignUpPage() {
     }
 
     // Password validation
-    const passwordValue = formData.password || '';
-    if (!passwordValue) {
+    if (!formData.password) {
       newErrors.password = 'Password is required.';
-    } else if (passwordValue.length < 6) {
+    } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters.';
     }
 
@@ -100,18 +99,26 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // In Phase 3 we will integrate full API network flows
-      console.log('Sending Form Data:', formData);
+      const res = await signup(formData);
       
-      // Temporary simulated flow for Phase 1 verification
-      // (Actual API connection will be activated and fully bound in Phase 3)
-      setIsLoading(false);
-      setApiSuccess('State validation complete! Ready for Phase 2 styling.');
+      if (res.success) {
+        setApiSuccess(res.message || 'User created successfully! Redirecting to sign in...');
+        // Deliberate 1.5s delay so users can experience the gorgeous success state and micro-animations
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
+      } else {
+        setErrors({
+          apiError: res.message || 'Registration failed. Please check your credentials.',
+        });
+      }
     } catch (error: any) {
-      setIsLoading(false);
+      // Handles network errors, non-200 responses from fetcher
       setErrors({
-        apiError: error.message || 'An unexpected error occurred during signup.',
+        apiError: error.message || 'An unexpected error occurred. Please try again later.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
