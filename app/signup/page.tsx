@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signup } from '@/lib/api';
+import { signup, getOtpSignup, verifyOtp } from '@/lib/api';
 
 // Interface for SignUp Form State
 export interface SignUpFormData {
@@ -18,6 +18,7 @@ export interface SignUpFormErrors {
   username?: string;
   email?: string;
   password?: string;
+  otp?: string;
   apiError?: string;
 }
 
@@ -37,6 +38,10 @@ export default function SignUpPage() {
   const [errors, setErrors] = useState<SignUpFormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiSuccess, setApiSuccess] = useState<string | null>(null);
+
+  // OTP Step States
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
 
   // Field change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,13 +90,13 @@ export default function SignUpPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Submit Handler
+  // Step 1: Submit Handler to request OTP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setApiSuccess(null);
 
-    // Client-side validation check
+    // Client-side validation check for signup details
     if (!validateForm()) {
       return;
     }
@@ -99,21 +104,68 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const res = await signup(formData);
+      const res = await getOtpSignup(formData.email);
       
       if (res.success) {
-        setApiSuccess(res.message || 'User created successfully! Redirecting to sign in...');
-        // Deliberate 1.5s delay so users can experience the gorgeous success state and micro-animations
+        setApiSuccess(res.message || 'Verification code sent! Please check your email.');
+        setIsOtpStep(true);
+      } else {
+        setErrors({
+          apiError: res.message || 'Failed to send verification code. Please try again.',
+        });
+      }
+    } catch (error: any) {
+      setErrors({
+        apiError: error.message || 'An unexpected error occurred. Please try again later.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 3: Verify OTP and then immediately register User
+  const handleVerifyAndRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    setApiSuccess(null);
+
+    // Basic validation of OTP input code
+    if (!otpCode.trim()) {
+      setErrors({ otp: 'Verification code is required.' });
+      return;
+    } else if (otpCode.trim().length !== 6 || isNaN(Number(otpCode))) {
+      setErrors({ otp: 'Code must be a 6-digit number.' });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // 1. Verify OTP first
+      const verifyRes = await verifyOtp(Number(otpCode));
+      
+      if (!verifyRes.success) {
+        setErrors({
+          otp: verifyRes.message || 'Verification failed. Incorrect or expired code.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Fire the registration call on success
+      const signupRes = await signup(formData);
+
+      if (signupRes.success) {
+        setApiSuccess(signupRes.message || 'Registration complete! Redirecting to sign in...');
         setTimeout(() => {
           router.push('/login');
         }, 1500);
       } else {
         setErrors({
-          apiError: res.message || 'Registration failed. Please check your credentials.',
+          apiError: signupRes.message || 'Registration failed. Please check your credentials.',
         });
       }
     } catch (error: any) {
-      // Handles network errors, non-200 responses from fetcher
       setErrors({
         apiError: error.message || 'An unexpected error occurred. Please try again later.',
       });
