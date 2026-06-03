@@ -1,7 +1,7 @@
 // lib/api.ts
 import { Book, Author, ApiResponse, User, Bookmark, Note, Collection, Comment } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://luminary-backend-chi.vercel.app/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Helper function to handle fetch and errors
 async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
@@ -14,7 +14,18 @@ async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiR
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    let errorMessage = `API error: ${res.status}`;
+    try {
+      const errorData = await res.json();
+      if (errorData && typeof errorData.message === 'string') {
+        errorMessage = errorData.message;
+      } else if (errorData && typeof errorData.error === 'string') {
+        errorMessage = errorData.error;
+      }
+    } catch {
+      // Fallback if parsing fails or stream is empty
+    }
+    throw new Error(errorMessage);
   }
   return res.json();
 }
@@ -26,6 +37,19 @@ export const signup = (data: any) => fetcher<User>('/authenticate/signup', { met
 export const login = (data: any) => fetcher<any>('/authenticate/login', { method: 'POST', body: JSON.stringify(data) });
 export const refreshTokens = (data: any) => fetcher<any>('/authenticate/refresh', { method: 'POST', body: JSON.stringify(data) });
 export const signout = () => fetcher<void>('/authenticate/signout', { method: 'POST' });
+
+// --- OTP AUTHENTICATION ---
+// Request OTP for an existing user
+export const getOtp = (email: string) => 
+  fetcher<any>('/authenticate/get-otp', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Request OTP during the sign-up process
+export const getOtpSignup = (email: string) => 
+  fetcher<any>('/authenticate/get-otp-signup', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Verify the numeric OTP code
+export const verifyOtp = (otp: number) => 
+  fetcher<any>('/authenticate/verify-otp', { method: 'POST', body: JSON.stringify({ otp }) });
 
 // --- USER ROUTES ---
 export const getUsers = () => fetcher<User[]>('/users');
