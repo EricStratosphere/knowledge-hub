@@ -104,35 +104,28 @@ export default function BookDetailOverlay({
             </div>
 
             {/* Action buttons below the cover */}
-            <div className="w-full max-w-[200px] flex flex-col gap-3 mt-6">
+            <div className="flex items-center justify-center gap-4 mt-6 w-full max-w-[200px]">
               
               {/* Primary action "Read Now" */}
               <button
                 onClick={handleReadNowClick}
-                className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-2.5 rounded-md text-xs tracking-wider uppercase transition-all duration-200 active:scale-[0.98] shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                className="bg-white text-[#080B11] hover:bg-neutral-100 font-bold px-4 py-2 rounded text-[11px] tracking-wider uppercase transition-all duration-200 active:scale-[0.98] shadow-md flex items-center justify-center gap-1 cursor-pointer h-8"
               >
-                <span className="text-[10px]">▸</span> Read Now
+                <span className="text-[9px]">▸</span> Read Now
               </button>
 
-              {/* Secondary tab trigger labels */}
-              <div className="flex items-center justify-center gap-4 mt-2">
-                <button
-                  onClick={() => setActiveTab('details')}
-                  className={`text-[10px] font-semibold uppercase tracking-widest transition-all duration-200 cursor-pointer ${
-                    activeTab === 'details' ? 'text-white border-b border-white pb-0.5' : 'text-white/40 hover:text-white/70'
-                  }`}
-                >
-                  Details
-                </button>
-                <button
-                  onClick={() => setActiveTab('chapters')}
-                  className={`text-[10px] font-semibold uppercase tracking-widest transition-all duration-200 cursor-pointer ${
-                    activeTab === 'chapters' ? 'text-white border-b border-white pb-0.5' : 'text-white/40 hover:text-white/70'
-                  }`}
-                >
+              {/* Chapter List Toggle button */}
+              <button
+                onClick={() => setActiveTab(activeTab === 'details' ? 'chapters' : 'details')}
+                className="text-[10px] font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer h-8 flex flex-col justify-center items-center relative"
+              >
+                <span className={`${activeTab === 'chapters' ? 'text-white' : 'text-white/60 hover:text-white'}`}>
                   Chapter List
-                </button>
-              </div>
+                </span>
+                {activeTab === 'chapters' && (
+                  <div className="absolute -bottom-1.5 left-0 right-0 h-[2.5px] bg-white rounded-full animate-fade-in" />
+                )}
+              </button>
 
             </div>
           </div>
