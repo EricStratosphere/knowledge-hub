@@ -9,8 +9,6 @@ export interface SignUpFormData {
   username: string;
   email: string;
   password: string; // Required field
-  is_admin: boolean;
-  is_writer: boolean;
 }
 
 // Interface for Validation Errors
@@ -30,8 +28,6 @@ export default function SignUpPage() {
     username: '',
     email: '',
     password: '',
-    is_admin: false,
-    is_writer: false,
   });
 
   // UI Status States
@@ -45,10 +41,10 @@ export default function SignUpPage() {
 
   // Field change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }));
     
     // Clear validation error on type
@@ -153,7 +149,11 @@ export default function SignUpPage() {
       }
 
       // 2. Fire the registration call on success
-      const signupRes = await signup(formData);
+      const signupRes = await signup({
+        ...formData,
+        is_writer: false,
+        is_admin: false,
+      });
 
       if (signupRes.success) {
         setApiSuccess(signupRes.message || 'Registration complete! Redirecting to sign in...');
@@ -387,63 +387,11 @@ export default function SignUpPage() {
                 )}
               </div>
 
-              {/* Premium Role Toggles */}
-              <div className="flex flex-col gap-4 pt-3.5">
-                
-                {/* Writer Custom Slide Toggle */}
-                <label className="flex items-center justify-between group cursor-pointer select-none">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
-                      Become a Writer
-                    </span>
-                    <span className="text-[10px] text-white/30">
-                      Write, publish, and distribute ebooks
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      name="is_writer"
-                      checked={formData.is_writer}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
-                    <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
-                  </div>
-                </label>
-
-                {/* Admin Custom Slide Toggle */}
-                <label className="flex items-center justify-between group cursor-pointer select-none">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors duration-300">
-                      Is Admin
-                    </span>
-                    <span className="text-[10px] text-white/30">
-                      Gain system administrator privileges
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      name="is_admin"
-                      checked={formData.is_admin}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-white/5 border border-white/10 rounded-full peer-focus:ring-0 peer-checked:bg-white peer-checked:border-white transition-all duration-300 relative" />
-                    <div className="absolute top-[3px] left-[3px] w-[14px] h-[14px] bg-white/40 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-[#080B11]" />
-                  </div>
-                </label>
-              </div>
-
               {/* Primary Action Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3.5 rounded-md text-xs tracking-widest uppercase transition-all duration-300 disabled:opacity-40 mt-6 active:scale-[0.98] shadow-[0_8px_30px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2.5 cursor-pointer"
+                className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3.5 rounded-md text-xs tracking-widest uppercase transition-all duration-300 disabled:opacity-40 mt-8 active:scale-[0.98] shadow-[0_8px_30px_rgba(255,255,255,0.06)] flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 {isLoading ? (
                   <>
