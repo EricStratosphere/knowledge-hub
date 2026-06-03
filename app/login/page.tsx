@@ -106,6 +106,14 @@ export default function LoginPage() {
     }
   };
 
+  // Forgot Password Handler
+  const handleForgotPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFormData({ email: '', password: '' });
+    setErrors({});
+    setApiSuccess('Password recovery system is currently being integrated.');
+  };
+
   return (
     <div className="flex flex-col lg:flex-row items-center justify-center min-h-screen bg-[#080B11] text-white p-6 md:p-12 relative overflow-hidden">
       {/* Premium Font Injection and Keyframes */}
@@ -156,11 +164,22 @@ export default function LoginPage() {
 
           {/* Validation Banner Messages */}
           {apiSuccess && (
-            <div className="mb-6 p-4 bg-emerald-950/45 border border-emerald-500/20 text-emerald-400/90 rounded-lg text-xs font-jakarta tracking-wide flex items-center gap-2.5 animate-fade-in">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {apiSuccess}
+            <div className="mb-6 p-4 bg-emerald-950/45 border border-emerald-500/20 text-emerald-400/90 rounded-lg text-xs font-jakarta tracking-wide flex items-center justify-between gap-2.5 animate-fade-in">
+              <div className="flex items-center gap-2.5">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{apiSuccess}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setApiSuccess(null)}
+                className="text-emerald-400/70 hover:text-emerald-400 transition-colors duration-150 p-1 rounded hover:bg-emerald-500/10 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
 
@@ -208,8 +227,8 @@ export default function LoginPage() {
                 </label>
                 <a
                   href="#forgot"
-                  onClick={(e) => e.preventDefault()}
-                  className="text-[10px] font-normal text-white/30 hover:text-white transition-colors duration-300 select-none"
+                  onClick={handleForgotPassword}
+                  className="text-[10px] font-normal text-white/30 hover:text-white transition-colors duration-300 select-none cursor-pointer"
                 >
                   Forgot password?
                 </a>
