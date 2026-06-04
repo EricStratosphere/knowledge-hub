@@ -1,0 +1,1 @@
+export const {PROJECT_ID, BUCKET_PDF_NAME,BUCKET_PHOTO_NAME, KEYFILENAME} = process.env;
