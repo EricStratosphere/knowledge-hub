@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "luminary-images",
+  "private_key_id": "9bfe3f56240890a1772aa464930cc81271947752",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDUYUNkFfzU0lIc\nHPXTz8LPyzPtWSPVBPCSKEV121az+k47X9l3CvU+cZe6m9wwdl+4xEKmOa0CNJx9\n1d5OLIl3HoX4NwlBvvhVFhiuIlqw2AN+rSeltXPiIF9HjTUmAp+OtDwKzBr4a8Qo\nQ03Sg/GkMkqmm7yz3uJ0Norjh5FGsLkuUnE4opw1QCkYEP7zY1AIhDAldu23hSax\nq1qOKxyA2qz3xr8Qs05LVyrjo1vIyDA1p8cCdhGsEIsppbebgArMeehob39nTTuT\nsyZ2Bv2YBJIiikajExTNgHbmm53zDJvklTTyn9r53hmrocmu/dNVfF4b1aU03qZl\n46FhZEDpAgMBAAECggEAZufV6ooI3uol5P9XUdFqeJriR1AY35+sHXWr6mZkBYL0\nIyrXSSojGKWbukzJDSZeTT2zea2ameX6KbLWK5TC6tf8W//22Ud6Nmglf0KgJO4W\nC2xFOLLKOrgq0pWmOgutWk0UhrrNGq/E9SlfbPCHxmKj70So05LcsSi4dXT7vH8E\nrhgbDzQjiClItalyzqnBSNDOpx02jMBKb9b2TUn5nbQk8KCUtrH34MS2gFGPxXui\nhn4aW38bydVjGSxYwVxauT8oigXfXmPOZSv3AxkelGsrBspKG7c/0PR+DjKBio4h\nYooPN8jZgqJo5vy0KeioYrIAqCzhkXTbnsnnTN3mrQKBgQDx10jLXKslC3FkNi4e\nqfys+FFr5bO1GPr9IdnHkO7B8y+CgAx9jJWfdcLBjU9CzSyTrQAjKoz2Gp7XtWEI\nvQtRq0gInO5DIxsaNzM+VCjT5cVCKMrOxwS7jzfZZIvb0svCPj5i8/9J1ugYGbvN\ni6+nsI6nzjZ6XLk6BkOybo8EuwKBgQDg0Gqtc22/zAkEHGONtahCgvCoHUJuB0uF\ncLBqSJYhPLToRlRFuun+n4+5tlv3ERruIB8ZjkuUTxxiY5fS/vOtsXwHFAhnNYWm\nyHOFwSypl1bde7uK/4I1F8dDzLmGL8RH67DIc2imASSGqF6cewrijce9EtjyoqEI\nebuA9t7IqwKBgCH+XOEY+YWPgjTP2NO+mSHHFcrQ0t3V0RHbvDztBmKEyFzTmu3a\n4P01FFcYgdel92oamzZWONIvE7zGZglQaVLlfI6ZYHRXbuvUboOIWOTQG1YdXcSK\n/QNQMk2AcJhJnRKEpUhLe8rpRl5834UY6WvsyWCU/9tbRT3+u21NVRUZAoGBAJVR\nuNk15rpSgdaKKJFyC60JnWB79qhwDfg2jeY6CgVPdfUk6UpbSJoHTwYRmmmyoclx\n6lYmDgsWtIqhDbFmB2Hhlbh51M8AXKIXV6uKT+jgjSCU008SQGCVR5O/waXfyiXe\n5M9u4B4KekE6SYTzsJojg3wQraoS3JRtjl2tGvH7AoGBAKpxo8o7+XqiY+2nPEen\nrJSPSNziLRqf4hFINqBBrfaHDd+dhOWjvNOJL2pYTmNlPfeEr4QE7TpBMvzwdERI\n+iV1ntvgfjtJP3rEJUg7qc4ogqMzw/TMaoDNztAtEu+ylxtxSM44WynVyVAeLTRv\nccMKAnNp4Snt2ClruragZcN6\n-----END PRIVATE KEY-----\n",
+  "client_email": "luminary-storage@luminary-images.iam.gserviceaccount.com",
+  "client_id": "108147463033215025292",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/luminary-storage%40luminary-images.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
