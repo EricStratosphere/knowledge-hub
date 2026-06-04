@@ -106,7 +106,7 @@ export default function BookDetailOverlay({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#080B11]/90 backdrop-blur-sm p-4 md:p-8 font-jakarta">
       {/* Container Card */}
-      <div className="w-full max-w-[840px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-6 md:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.9)] relative overflow-hidden flex flex-col md:min-h-[460px]">
+      <div className="w-full max-w-[840px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-6 md:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.9)] relative overflow-y-auto max-h-[90vh] scrollbar-thin flex flex-col md:min-h-[460px]">
 
         {/* Top Highlight line */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
@@ -265,7 +265,7 @@ export default function BookDetailOverlay({
         <div className="border-t border-white/[0.06] w-full my-5 z-10" />
 
         {/* Bottom Full-Width Scroll Zone (Row 2) */}
-        <div className="w-full flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin max-h-[220px] z-10 animate-fade-in text-left">
+        <div className="w-full z-10 animate-fade-in text-left space-y-4">
           
           {/* Review Input Box Form */}
           <div className="bg-white/[0.015] border border-white/[0.05] rounded-xl p-3.5 space-y-2">
