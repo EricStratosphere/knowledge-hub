@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import * as api from '@/lib/api';
 import BookDetailOverlay, { BookDetailData } from '@/components/BookDetailOverlay';
+import { Book } from '@/types';
 
 // High-fidelity Mock Dataset matching image_2414fb.jpg
 const mockBooks: BookDetailData[] = [
@@ -191,10 +193,29 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [results, setResults] = useState<BookDetailData[]>(mockBooks);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Authors mapping cache
+  const [authorsMap, setAuthorsMap] = useState<Record<string, string>>({});
+
   // Overlay Interaction State
   const [selectedBook, setSelectedBook] = useState<BookDetailData | null>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+
+  // Load authors map on mount to map author_id -> author_name
+  useEffect(() => {
+    api.getAuthors()
+      .then((res) => {
+        if (res.success && res.data) {
+          const map: Record<string, string> = {};
+          res.data.forEach((author) => {
+            map[author._id] = author.name;
+          });
+          setAuthorsMap(map);
+        }
+      })
+      .catch((err) => console.error('Failed to load authors data:', err));
+  }, []);
 
   // Debouncing Effect: waits for 300ms of inactivity before updating debouncedQuery
   useEffect(() => {
@@ -205,23 +226,81 @@ export default function SearchPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Search execution pipeline: filters the dataset based on the debounced input
+  // Search execution pipeline: queries the backend API or filters mock dataset
   useEffect(() => {
     const trimmed = debouncedQuery.trim().toLowerCase();
+    
+    // Helper to map Book interface from API to BookDetailData expected by the Overlay
+    const mapBookToDetail = (book: Book): BookDetailData => {
+      const authorName = book.book_author_id
+        ?.map((id) => authorsMap[id] || 'Unknown Author')
+        .join(', ') || 'Unknown Author';
+
+      return {
+        _id: book._id,
+        book_title: book.book_title,
+        author_name: authorName,
+        genre: book.genre || [],
+        description: book.description || '',
+        image_url: book.image_url || '',
+        pdf_url: book.pdf_url || '',
+        rating: 4.5, // Default rating for catalogs
+        chapters: [],
+        reviews: []
+      };
+    };
+
+    setIsLoading(true);
+
     if (!trimmed) {
-      setResults(mockBooks);
+      // Fetch all books from backend first, fall back to high-fidelity mock list
+      api.getBooks()
+        .then((res) => {
+          if (res.success && res.data && res.data.length > 0) {
+            setResults(res.data.map(mapBookToDetail));
+          } else {
+            setResults(mockBooks);
+          }
+        })
+        .catch(() => {
+          setResults(mockBooks);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
       return;
     }
 
-    const filtered = mockBooks.filter((book) => {
-      const matchTitle = book.book_title.toLowerCase().includes(trimmed);
-      const matchAuthor = book.author_name.toLowerCase().includes(trimmed);
-      const matchGenre = book.genre.some((g) => g.toLowerCase().includes(trimmed));
-      return matchTitle || matchAuthor || matchGenre;
-    });
-
-    setResults(filtered);
-  }, [debouncedQuery]);
+    // Call actual search API
+    api.searchBooks(trimmed)
+      .then((res) => {
+        if (res.success && res.data && res.data.length > 0) {
+          setResults(res.data.map(mapBookToDetail));
+        } else {
+          // Client-side fallback search on mockBooks if API is empty
+          const filtered = mockBooks.filter((book) => {
+            const matchTitle = book.book_title.toLowerCase().includes(trimmed);
+            const matchAuthor = book.author_name.toLowerCase().includes(trimmed);
+            const matchGenre = book.genre.some((g) => g.toLowerCase().includes(trimmed));
+            return matchTitle || matchAuthor || matchGenre;
+          });
+          setResults(filtered);
+        }
+      })
+      .catch(() => {
+        // Fallback filter locally on error
+        const filtered = mockBooks.filter((book) => {
+          const matchTitle = book.book_title.toLowerCase().includes(trimmed);
+          const matchAuthor = book.author_name.toLowerCase().includes(trimmed);
+          const matchGenre = book.genre.some((g) => g.toLowerCase().includes(trimmed));
+          return matchTitle || matchAuthor || matchGenre;
+        });
+        setResults(filtered);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [debouncedQuery, authorsMap]);
 
   // Click handler to launch details modal overlay
   const handleBookClick = (book: BookDetailData) => {
@@ -248,6 +327,28 @@ export default function SearchPage() {
         }
         .animate-fade-in {
           animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+        .animate-shimmer::after {
+          position: absolute;
+          inset: 0;
+          transform: translateX(-100%);
+          background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.05) 20%,
+            rgba(255, 255, 255, 0.1) 60%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: shimmer 1.6s infinite;
+          content: '';
         }
       `}} />
 
@@ -295,9 +396,19 @@ export default function SearchPage() {
         </div>
       </section>
 
-      {/* Interactive Grid Section */}
+      {/* Interactive Grid Section / Loading Shimmer */}
       <section className="w-full max-w-6xl mx-auto z-10 relative px-4 flex-1">
-        {results.length > 0 ? (
+        {isLoading ? (
+          // Shimmer Placeholders matching the exact grid layout style
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 md:gap-8 justify-items-center">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="aspect-[3/4.4] w-full max-w-[220px] bg-[#111622]/20 border border-white/[0.03] rounded-xl animate-shimmer"
+              />
+            ))}
+          </div>
+        ) : results.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 md:gap-8 justify-items-center animate-fade-in">
             {results.map((book) => (
               <div
