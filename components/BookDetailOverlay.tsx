@@ -9,6 +9,14 @@ export interface Chapter {
   chapterNumber: number;
 }
 
+// Interface for Review Reply structures
+export interface ReviewReply {
+  _id: string;
+  username: string;
+  content: string;
+  createdAt: string;
+}
+
 // Interface for Review structures
 export interface BookReview {
   _id: string;
@@ -16,6 +24,7 @@ export interface BookReview {
   rating: number;
   content: string;
   createdAt: string;
+  replies?: ReviewReply[];
 }
 
 // Interface for Book details structures
@@ -59,6 +68,14 @@ export default function BookDetailOverlay({
       rating: 5,
       content: 'Absolutely spellbinding. The pacing was flawless and the mystery kept me hooked until the final page!',
       createdAt: '2 days ago',
+      replies: [
+        {
+          _id: 'rep-1',
+          username: 'LoverOfLore',
+          content: 'Agreed! The ending had me completely shocked.',
+          createdAt: '1 day ago'
+        }
+      ]
     },
     {
       _id: 'rev-2',
@@ -66,12 +83,17 @@ export default function BookDetailOverlay({
       rating: 4,
       content: 'A fantastic second installment. Loved the lore expansion around the Hogwarts houses.',
       createdAt: '1 week ago',
+      replies: []
     },
   ];
 
   const [reviewsList, setReviewsList] = useState<BookReview[]>(book.reviews || defaultMockReviews);
   const [inputRating, setInputRating] = useState<number>(5);
   const [inputText, setInputText] = useState<string>('');
+
+  // Local hook states for inline comment replies
+  const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
 
   const handleReviewSubmit = () => {
     if (!inputText.trim()) return;
@@ -82,11 +104,38 @@ export default function BookDetailOverlay({
       rating: inputRating,
       content: inputText.trim(),
       createdAt: 'Just now',
+      replies: []
     };
 
     setReviewsList((prev) => [newReview, ...prev]);
     setInputText('');
     setInputRating(5);
+  };
+
+  const handleReplySubmit = (reviewId: string) => {
+    if (!replyText.trim()) return;
+
+    const newReply: ReviewReply = {
+      _id: `rep-${Date.now()}`,
+      username: 'AnonymousReader',
+      content: replyText.trim(),
+      createdAt: 'Just now',
+    };
+
+    setReviewsList((prev) =>
+      prev.map((r) => {
+        if (r._id === reviewId) {
+          return {
+            ...r,
+            replies: [...(r.replies || []), newReply],
+          };
+        }
+        return r;
+      })
+    );
+
+    setActiveReplyId(null);
+    setReplyText('');
   };
 
   if (!isOpen) return null;
@@ -345,6 +394,77 @@ export default function BookDetailOverlay({
                   <p className="text-xs font-light text-white/60 leading-relaxed">
                     {review.content}
                   </p>
+
+                  {/* Reply Button Trigger */}
+                  <div className="flex items-center gap-4 mt-1 select-none">
+                    <button
+                      onClick={() => {
+                        if (activeReplyId === review._id) {
+                          setActiveReplyId(null);
+                          setReplyText('');
+                        } else {
+                          setActiveReplyId(review._id);
+                          setReplyText('');
+                        }
+                      }}
+                      className="text-[10px] font-semibold text-white/40 hover:text-white transition-colors duration-200 cursor-pointer uppercase tracking-wider"
+                    >
+                      Reply
+                    </button>
+                  </div>
+
+                  {/* Inline Animated Form */}
+                  {activeReplyId === review._id && (
+                    <div className="mt-2.5 bg-white/[0.015] border border-white/[0.05] rounded-lg p-2.5 space-y-2 animate-fade-in">
+                      <input
+                        type="text"
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder={`Reply to ${review.username}...`}
+                        className="w-full bg-transparent border-b border-white/10 focus:border-white focus:outline-none transition-all duration-200 py-1 text-white placeholder-white/20 text-xs focus:ring-0"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setActiveReplyId(null);
+                            setReplyText('');
+                          }}
+                          className="px-2 py-1 rounded text-[9px] font-semibold uppercase tracking-wider text-white/40 hover:text-white transition-colors duration-200 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleReplySubmit(review._id)}
+                          disabled={!replyText.trim()}
+                          className="bg-white text-[#080B11] hover:bg-neutral-100 font-bold px-2 py-1 rounded text-[9px] tracking-wider uppercase transition-all duration-200 active:scale-[0.97] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nested Replies Presentation */}
+                  {review.replies && review.replies.length > 0 && (
+                    <div className="border-l-2 border-white/[0.04] pl-4 space-y-3 mt-3 ml-2">
+                      {review.replies.map((reply) => (
+                        <div key={reply._id} className="flex gap-2.5 text-left items-start">
+                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-semibold text-white/50 select-none flex-shrink-0">
+                            {reply.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 space-y-0.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-medium text-white/70">{reply.username}</span>
+                              <span className="text-[9px] text-white/30">{reply.createdAt}</span>
+                            </div>
+                            <p className="text-[11px] font-light text-white/50 leading-relaxed">
+                              {reply.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
