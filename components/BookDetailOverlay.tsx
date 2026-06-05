@@ -154,8 +154,44 @@ export default function BookDetailOverlay({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#080B11]/90 backdrop-blur-sm p-4 md:p-8 font-jakarta">
+      {/* Injected custom webkit-scrollbar styling */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 999px;
+          transition: background-color 0.2s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.18);
+        }
+        
+        /* Also apply it to any nested list tracks inside the overlay */
+        .custom-scrollbar *::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        .custom-scrollbar *::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar *::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 999px;
+          transition: background-color 0.2s ease;
+        }
+        .custom-scrollbar *::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.18);
+        }
+      `}} />
+
       {/* Container Card */}
-      <div className="w-full max-w-[840px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-6 md:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.9)] relative overflow-y-auto max-h-[90vh] scrollbar-thin flex flex-col md:min-h-[460px]">
+      <div className="w-full max-w-[840px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-6 md:p-10 shadow-[0_30px_90px_rgba(0,0,0,0.9)] relative overflow-y-auto max-h-[90vh] scrollbar-thin custom-scrollbar flex flex-col md:min-h-[460px]">
 
         {/* Top Highlight line */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
