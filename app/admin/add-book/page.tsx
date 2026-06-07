@@ -22,8 +22,6 @@ export default function AddBookPage() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
-  const [isWriterOnly, setIsWriterOnly] = useState(false);
-  const [matchingAuthor, setMatchingAuthor] = useState<any | null>(null);
 
   // Form Field States
   const [title, setTitle] = useState('');
@@ -52,48 +50,13 @@ export default function AddBookPage() {
         const resolved = parsed.user || parsed.data || parsed;
         if (resolved && resolved._id) {
           setCurrentUser(resolved);
-          
-          if (resolved.is_admin) {
-            // Admin: editable author ID, bypasses locking
-            setIsWriterOnly(false);
-            setAuthChecking(false);
-          } else if (resolved.is_writer) {
-            // Writer: lock to their author profile name
-            setIsWriterOnly(true);
-            lookupAuthorProfile(resolved.username);
-          } else {
-            // Non-authorized user
-            setAuthChecking(false);
-          }
-        } else {
-          setAuthChecking(false);
         }
       } catch (err) {
         console.error('Session loading error:', err);
-        setAuthChecking(false);
       }
-    } else {
-      setAuthChecking(false);
     }
+    setAuthChecking(false);
   }, []);
-
-  // Search authors by name matching the username
-  const lookupAuthorProfile = async (username: string) => {
-    try {
-      const res = await api.searchAuthors(username);
-      if (res.success && res.data && res.data.length > 0) {
-        const match = res.data.find(
-          (a) => a.name.toLowerCase() === username.toLowerCase()
-        ) || res.data[0];
-        setMatchingAuthor(match);
-        setAuthorId(match._id);
-      }
-    } catch (err) {
-      console.error('Failed lookup of author profile:', err);
-    } finally {
-      setAuthChecking(false);
-    }
-  };
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -123,11 +86,7 @@ export default function AddBookPage() {
 
     // Validation checks
     if (!title.trim()) return setErrorMsg('Book title is required.');
-    if (isWriterOnly && !authorId && !matchingAuthor) {
-      // In writer mode with no matching author, we will create the author record first.
-    } else if (!authorId.trim()) {
-      return setErrorMsg('Author ID is required.');
-    }
+    if (!authorId.trim()) return setErrorMsg('Author ID is required.');
     if (!datePublished) return setErrorMsg('Publication date is required.');
     if (selectedGenres.length === 0) return setErrorMsg('Please select at least one genre.');
     if (!imageUrl.trim()) return setErrorMsg('Cover image URL is required.');
@@ -137,34 +96,7 @@ export default function AddBookPage() {
     setIsLoading(true);
 
     try {
-      let finalAuthorId = authorId.trim();
-
-      // If writer account does not have a profile matching their username, create it on-the-fly
-      if (isWriterOnly && !finalAuthorId && currentUser) {
-        try {
-          const authorProfileRes = await api.createAuthor({
-            name: currentUser.username,
-            author_description: `Official author profile for ${currentUser.username}.`
-          });
-          if (authorProfileRes.success && authorProfileRes.data) {
-            finalAuthorId = authorProfileRes.data._id;
-            setAuthorId(finalAuthorId);
-            setMatchingAuthor(authorProfileRes.data);
-          } else {
-            throw new Error(authorProfileRes.message || 'Could not auto-create profile.');
-          }
-        } catch (createErr: any) {
-          setErrorMsg(`Failed to auto-generate writer profile: ${createErr.message}`);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      if (!finalAuthorId) {
-        setErrorMsg('Author ID is required.');
-        setIsLoading(false);
-        return;
-      }
+      const finalAuthorId = authorId.trim();
 
       // Build serialized payload mapping to database model contracts
       const payload = {
@@ -183,9 +115,7 @@ export default function AddBookPage() {
         setSuccessMsg(res.message || 'Book created successfully in the library suite!');
         // Clear fields on success
         setTitle('');
-        if (!isWriterOnly) {
-          setAuthorId('');
-        }
+        setAuthorId('');
         setDatePublished('');
         setImageUrl('');
         setPdfUrl('');
@@ -236,8 +166,8 @@ export default function AddBookPage() {
     );
   }
 
-  // 3. Unauthorized Screen (Neither Admin nor Writer)
-  if (!currentUser.is_admin && !currentUser.is_writer) {
+  // 3. Unauthorized Screen (Not Admin)
+  if (!currentUser.is_admin) {
     return (
       <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center justify-center p-6 font-jakarta">
         <section className="w-full max-w-[420px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-8 md:p-10 shadow-2xl text-center relative overflow-hidden animate-fade-in">
@@ -245,7 +175,7 @@ export default function AddBookPage() {
             Access Denied
           </h2>
           <p className="text-xs text-white/40 leading-relaxed mb-6 font-light select-none">
-            Only authenticated authors and administrators are permitted to register library editions.
+            Only administrator accounts are permitted to register library editions.
           </p>
           <button
             onClick={() => router.push('/')}
@@ -341,7 +271,7 @@ export default function AddBookPage() {
             />
           </div>
 
-          {/* Author ID field (editable for Admin, read-only/locked for Writer) */}
+          {/* Author ID field */}
           <div className="relative group transition-all duration-300">
             <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
               Author Object ID
@@ -350,30 +280,11 @@ export default function AddBookPage() {
               type="text"
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              disabled={isLoading || isWriterOnly}
-              placeholder={isWriterOnly ? (matchingAuthor ? matchingAuthor._id : 'Will auto-create profile') : 'e.g. 64b85c13e4b0258d4a7f1a92'}
-              className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2 text-white placeholder-white/20 text-sm focus:ring-0 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
-              required={!isWriterOnly}
+              disabled={isLoading}
+              placeholder="e.g. 64b85c13e4b0258d4a7f1a92"
+              className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2 text-white placeholder-white/20 text-sm focus:ring-0 font-mono disabled:opacity-60"
+              required
             />
-            {isWriterOnly && (
-              <div className="mt-1.5">
-                {matchingAuthor ? (
-                  <p className="text-emerald-400/80 text-[10px] font-medium flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Locked to your writer profile: {matchingAuthor.name}
-                  </p>
-                ) : (
-                  <p className="text-amber-400/80 text-[10px] font-medium flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    No writer profile detected. A profile named "{currentUser?.username}" will be created on submission.
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Date Published field */}
