@@ -140,6 +140,7 @@ export default function ProfilePage() {
         if (resolvedUser && resolvedUser._id) {
           setUser(resolvedUser);
           setNewUsername(resolvedUser.username || '');
+          setCollections([]); // Clear to empty collections for logged in user initially
           fetchUserData(resolvedUser._id);
         } else {
           loadMockData();
@@ -153,7 +154,7 @@ export default function ProfilePage() {
     }
   }, [authorsMap]);
 
-  // Load mock data fallbacks
+  // Load mock data fallbacks (only for guests)
   const loadMockData = () => {
     setUser(mockUser);
     setNewUsername(mockUser.username);
@@ -168,66 +169,69 @@ export default function ProfilePage() {
     try {
       // Refresh current user info
       const userRes = await api.getUserById(userId);
-      let activeUser = user;
       if (userRes.success && userRes.data) {
         setUser(userRes.data);
         setNewUsername(userRes.data.username);
         localStorage.setItem('user', JSON.stringify(userRes.data));
-        activeUser = userRes.data;
       }
 
       // Retrieve collections
-      const colRes = await api.getUserCollections(userId);
-      if (colRes.success && colRes.data && colRes.data.length > 0) {
-        const resolved: ResolvedCollection[] = await Promise.all(
-          colRes.data.map(async (col) => {
-            try {
-              const relsRes = await api.getEbooksByCollectionId(col._id);
-              if (relsRes.success && relsRes.data && relsRes.data.length > 0) {
-                const books = await Promise.all(
-                  relsRes.data.map(async (rel) => {
-                    const bookId = typeof rel.book_id === 'string' ? rel.book_id : rel.book_id?._id;
-                    if (!bookId) return null;
-                    const bookRes = await api.getBookById(bookId);
-                    if (bookRes.success && bookRes.data) {
-                      const authorName = bookRes.data.book_author_id
-                        ?.map((id) => authorsMap[id] || 'Unknown Author')
-                        .join(', ') || 'Unknown Author';
-                      return {
-                        _id: bookRes.data._id,
-                        book_title: bookRes.data.book_title,
-                        author_name: authorName,
-                        genre: bookRes.data.genre || [],
-                        description: bookRes.data.description || '',
-                        image_url: bookRes.data.image_url || '',
-                        pdf_url: bookRes.data.pdf_url || '',
-                        rating: 4.5,
-                        chapters: [],
-                        reviews: []
-                      } as BookDetailData;
-                    }
-                    return null;
-                  })
-                );
-                const resolvedBooks = books.filter((b): b is BookDetailData => b !== null);
-                return {
-                  ...col,
-                  books: resolvedBooks.length > 0 ? resolvedBooks : fallbackBooks
-                };
+      try {
+        const colRes = await api.getUserCollections(userId);
+        if (colRes.success && colRes.data && colRes.data.length > 0) {
+          const resolved: ResolvedCollection[] = await Promise.all(
+            colRes.data.map(async (col) => {
+              try {
+                const relsRes = await api.getEbooksByCollectionId(col._id);
+                if (relsRes.success && relsRes.data && relsRes.data.length > 0) {
+                  const books = await Promise.all(
+                    relsRes.data.map(async (rel) => {
+                      const bookId = typeof rel.book_id === 'string' ? rel.book_id : rel.book_id?._id;
+                      if (!bookId) return null;
+                      const bookRes = await api.getBookById(bookId);
+                      if (bookRes.success && bookRes.data) {
+                        const authorName = bookRes.data.book_author_id
+                          ?.map((id) => authorsMap[id] || 'Unknown Author')
+                          .join(', ') || 'Unknown Author';
+                        return {
+                          _id: bookRes.data._id,
+                          book_title: bookRes.data.book_title,
+                          author_name: authorName,
+                          genre: bookRes.data.genre || [],
+                          description: bookRes.data.description || '',
+                          image_url: bookRes.data.image_url || '',
+                          pdf_url: bookRes.data.pdf_url || '',
+                          rating: 4.5,
+                          chapters: [],
+                          reviews: []
+                        } as BookDetailData;
+                      }
+                      return null;
+                    })
+                  );
+                  const resolvedBooks = books.filter((b): b is BookDetailData => b !== null);
+                  return {
+                    ...col,
+                    books: resolvedBooks
+                  };
+                }
+                return { ...col, books: [] };
+              } catch {
+                return { ...col, books: [] };
               }
-              return { ...col, books: fallbackBooks };
-            } catch {
-              return { ...col, books: fallbackBooks };
-            }
-          })
-        );
-        setCollections(resolved);
-      } else {
-        setCollections(mockCollections);
+            })
+          );
+          setCollections(resolved);
+        } else {
+          setCollections([]);
+        }
+      } catch (err: any) {
+        console.warn('No collections found for user:', err.message);
+        setCollections([]);
       }
     } catch (err: any) {
-      console.error('Error loading API collections:', err);
-      setCollections(mockCollections);
+      console.error('Error loading API user details:', err);
+      setCollections([]);
     } finally {
       setIsLoading(false);
     }
