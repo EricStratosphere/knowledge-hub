@@ -87,8 +87,10 @@ export default function LoginPage() {
       
       if (res.success) {
         setApiSuccess(res.message || 'Signed in successfully! Redirecting...');
-        if (res.data) {
-          localStorage.setItem('user', JSON.stringify(res.data));
+        const loginRes = res as any;
+        const userObj = loginRes.data?.user || loginRes.user || loginRes.data || loginRes;
+        if (userObj) {
+          localStorage.setItem('user', JSON.stringify(userObj));
         }
         // Deliberate 1.5s delay so users can experience the success animations
         setTimeout(() => {

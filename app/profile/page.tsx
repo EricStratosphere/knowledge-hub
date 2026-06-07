@@ -135,10 +135,15 @@ export default function ProfilePage() {
     const stored = localStorage.getItem('user');
     if (stored) {
       try {
-        const parsed: User = JSON.parse(stored);
-        setUser(parsed);
-        setNewUsername(parsed.username);
-        fetchUserData(parsed._id);
+        const parsed: any = JSON.parse(stored);
+        const resolvedUser = parsed.user || parsed.data || parsed;
+        if (resolvedUser && resolvedUser._id) {
+          setUser(resolvedUser);
+          setNewUsername(resolvedUser.username || '');
+          fetchUserData(resolvedUser._id);
+        } else {
+          loadMockData();
+        }
       } catch (err) {
         console.error('Local user parsing error:', err);
         loadMockData();
