@@ -84,6 +84,52 @@ export default function HomePage() {
   const [selectedBook, setSelectedBook] = useState<BookDetailData | null>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
+  // Menu Drawer and Collections State Hooks
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCollectionListOpen, setIsCollectionListOpen] = useState(false);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
+  const [collections, setCollections] = useState<any[]>([]);
+
+  // Fetch user collections on authentication success
+  useEffect(() => {
+    if (currentUser) {
+      async function loadCollections() {
+        try {
+          const res = await api.getUserCollections(currentUser._id);
+          if (res.success && res.data) {
+            setCollections(res.data);
+          }
+        } catch (err) {
+          console.error('Failed to load collections:', err);
+        }
+      }
+      loadCollections();
+    }
+  }, [currentUser]);
+
+  // Handler to add a new collection
+  const handleAddCollection = async () => {
+    if (!collectionName.trim() || !currentUser) return;
+    try {
+      const res = await api.createCollection({
+        name: collectionName.trim(),
+        user_id: currentUser._id,
+        public: true
+      });
+      if (res.success && res.data) {
+        setCollections((prev) => [...prev, res.data]);
+        setCollectionName('');
+        setIsCollectionModalOpen(false);
+      } else {
+        alert(res.message || 'Failed to create collection');
+      }
+    } catch (err: any) {
+      console.error('Failed to create collection:', err);
+      alert(err.message || 'Failed to create collection');
+    }
+  };
+
   // Load session storage on mount
   useEffect(() => {
     const stored = localStorage.getItem('user');
@@ -174,6 +220,13 @@ export default function HomePage() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slide-in-left {
+          animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}} />
 
       {/* Background Decorative Glows */}
@@ -184,6 +237,7 @@ export default function HomePage() {
       <nav className="w-full max-w-[1200px] mx-auto px-6 md:px-12 py-6 flex items-center justify-between z-10 relative select-none">
         {/* Menu Hamburger */}
         <button
+          onClick={() => setIsMenuOpen(true)}
           aria-label="Open menu"
           className="text-white/80 hover:text-white transition-all duration-200 cursor-pointer p-2 rounded-lg hover:bg-white/5 active:scale-95 flex items-center justify-center border border-transparent"
         >
@@ -329,6 +383,184 @@ export default function HomePage() {
             }
           }}
         />
+      )}
+
+      {/* Side Menu Drawer */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-40 flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          
+          {/* Drawer Content */}
+          <div className="relative w-[300px] max-w-[85vw] h-full bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border-r border-white/[0.08] p-6 md:p-8 flex flex-col shadow-2xl rounded-r-3xl z-50 transform transition-transform duration-300 animate-slide-in-left select-none">
+            
+            {/* Top Close Button (Hamburger Icon) */}
+            <div className="flex justify-end mb-12">
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Close menu"
+                className="text-white hover:text-white/80 transition-all duration-200 cursor-pointer p-2 rounded-lg hover:bg-white/5 active:scale-95 flex items-center justify-center"
+              >
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Menu Items Stack */}
+            <div className="flex flex-col gap-8 flex-1 px-2">
+              
+              {/* Item: Search */}
+              <div 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  router.push('/search');
+                }}
+                className="flex items-center justify-between border-b border-white/20 pb-2.5 cursor-pointer hover:border-white transition-colors duration-200 group"
+              >
+                <span className="font-luxury-serif italic text-2xl font-light tracking-wide text-white/90 group-hover:text-white transition-colors duration-200">
+                  Search
+                </span>
+                <svg className="w-5 h-5 text-white/50 group-hover:text-white transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              {/* Item: Collections */}
+              <div className="flex flex-col gap-3">
+                <div 
+                  onClick={() => {
+                    if (!currentUser) {
+                      setIsMenuOpen(false);
+                      router.push('/login');
+                    } else {
+                      setIsCollectionListOpen(!isCollectionListOpen);
+                    }
+                  }}
+                  className="flex items-center justify-between border-b border-white/20 pb-2.5 cursor-pointer hover:border-white transition-colors duration-200 group"
+                >
+                  <span className="font-luxury-serif italic text-2xl font-light tracking-wide text-white/90 group-hover:text-white transition-colors duration-200">
+                    Collections
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {currentUser && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsCollectionModalOpen(true);
+                        }}
+                        className="text-white/60 hover:text-white p-1 rounded hover:bg-white/5 transition-colors duration-200"
+                        title="Add Collection"
+                      >
+                        <span className="text-xl font-bold">+</span>
+                      </button>
+                    )}
+                    <svg className="w-5 h-5 text-white/50 group-hover:text-white transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Nested Collections List Submenu */}
+                {currentUser && isCollectionListOpen && (
+                  <div className="flex flex-col gap-2 pl-4 py-1 max-h-[160px] overflow-y-auto custom-scrollbar select-none text-left animate-fade-in">
+                    {collections.length === 0 ? (
+                      <p className="text-xs italic text-white/30">No collections created yet.</p>
+                    ) : (
+                      collections.map((col) => (
+                        <div 
+                          key={col._id}
+                          className="text-sm font-light text-white/65 hover:text-white transition-colors duration-150 cursor-pointer py-1 truncate"
+                        >
+                          📚 {col.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Item: Favorites */}
+              <div 
+                onClick={() => {
+                  if (!currentUser) {
+                    setIsMenuOpen(false);
+                    router.push('/login');
+                  } else {
+                    setIsMenuOpen(false);
+                    router.push('/profile');
+                  }
+                }}
+                className="flex items-center justify-between border-b border-white/20 pb-2.5 cursor-pointer hover:border-white transition-colors duration-200 group"
+              >
+                <span className="font-luxury-serif italic text-2xl font-light tracking-wide text-white/90 group-hover:text-white transition-colors duration-200">
+                  Favorites
+                </span>
+                <svg className="w-5 h-5 text-white/50 group-hover:text-white transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Collection Modal */}
+      {isCollectionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#080B11]/85 backdrop-blur-xs p-4 animate-fade-in">
+          {/* Card Container */}
+          <div className="w-full max-w-[400px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-6 shadow-[0_30px_70px_rgba(0,0,0,0.8)] relative flex flex-col">
+            
+            {/* Header section */}
+            <div className="flex items-center justify-between mb-6 select-none">
+              {/* Close Button on Left */}
+              <button
+                onClick={() => {
+                  setIsCollectionModalOpen(false);
+                  setCollectionName('');
+                }}
+                aria-label="Close modal"
+                className="text-white/45 hover:text-white transition-colors duration-200 cursor-pointer p-1 rounded hover:bg-white/5"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Title Centered */}
+              <h3 className="font-luxury-serif text-xl font-light text-white tracking-wide">
+                Add Collection
+              </h3>
+
+              {/* Plus Action Button on Right */}
+              <button
+                onClick={handleAddCollection}
+                disabled={!collectionName.trim()}
+                aria-label="Add collection"
+                className="text-white/45 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer p-1 rounded hover:bg-white/5 active:scale-95"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Input Box container */}
+            <div className="bg-[#181D29] border border-white/[0.06] rounded-xl p-4 flex items-center">
+              <input
+                type="text"
+                value={collectionName}
+                onChange={(e) => setCollectionName(e.target.value)}
+                placeholder="Enter collection name..."
+                className="w-full bg-transparent focus:outline-none text-white text-sm font-light placeholder-white/20 select-text focus:ring-0"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
