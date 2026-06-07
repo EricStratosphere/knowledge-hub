@@ -55,6 +55,7 @@ export const verifyOtp = (otp: number) =>
 export const getUsers = () => fetcher<User[]>('/users');
 export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`);
 export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`);
+export const updateUser = (id: string, data: Partial<User>) => fetcher<User>(`/users/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 
 // --- BOOK ROUTES ---
 export const getBooks = () => fetcher<Book[]>('/books');

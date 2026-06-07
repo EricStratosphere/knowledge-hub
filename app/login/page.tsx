@@ -87,6 +87,9 @@ export default function LoginPage() {
       
       if (res.success) {
         setApiSuccess(res.message || 'Signed in successfully! Redirecting...');
+        if (res.data) {
+          localStorage.setItem('user', JSON.stringify(res.data));
+        }
         // Deliberate 1.5s delay so users can experience the success animations
         setTimeout(() => {
           router.push('/');
