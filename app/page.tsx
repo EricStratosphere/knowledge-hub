@@ -10,7 +10,7 @@ import { Book } from '@/types';
 // Global cache for resolving and keeping author names to optimize API requests
 const authorCache: { [id: string]: string } = {};
 
-const resolveAuthorName = async (authorId: string): Promise<string> => {
+const resolveAuthorName = async (authorId: string, bookTitle?: string): Promise<string> => {
   if (!authorId) return 'Unknown Author';
   if (authorCache[authorId]) return authorCache[authorId];
   try {
@@ -22,12 +22,29 @@ const resolveAuthorName = async (authorId: string): Promise<string> => {
   } catch (err) {
     console.error(`Failed to fetch author: ${authorId}`, err);
   }
+
+  // Fallback: search Open Library using the book's title if database record is missing
+  if (bookTitle) {
+    try {
+      const cleanTitle = bookTitle.split(':')[0].split('&')[0].trim();
+      const response = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(cleanTitle)}&limit=1`);
+      const data = await response.json();
+      if (data.docs && data.docs.length > 0 && data.docs[0].author_name) {
+        const authorName = data.docs[0].author_name[0];
+        authorCache[authorId] = authorName;
+        return authorName;
+      }
+    } catch (err) {
+      console.error('Failed to resolve author name fallback from Open Library:', err);
+    }
+  }
+
   return 'Unknown Author';
 };
 
-const resolveAuthorNames = async (authorIds: string[]): Promise<string> => {
+const resolveAuthorNames = async (authorIds: string[], bookTitle?: string): Promise<string> => {
   if (!authorIds || authorIds.length === 0) return 'Unknown Author';
-  const names = await Promise.all(authorIds.map(resolveAuthorName));
+  const names = await Promise.all(authorIds.map((id) => resolveAuthorName(id, bookTitle)));
   const filtered = names.filter((n) => n !== 'Unknown Author');
   return filtered.length > 0 ? filtered.join(', ') : 'Unknown Author';
 };
@@ -95,7 +112,7 @@ export default function HomePage() {
             b.book_title.toLowerCase().includes('percy jackson')
           ) || res.data[0];
 
-          const authorName = await resolveAuthorNames(found.book_author_id);
+          const authorName = await resolveAuthorNames(found.book_author_id, found.book_title);
           setFeaturedBook({
             _id: found._id,
             book_title: found.book_title,
@@ -344,7 +361,7 @@ function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
               try {
                 const markRes = await api.getBookmarksForBook(book._id, userId);
                 if (markRes.success && markRes.data) {
-                  const authorName = await resolveAuthorNames(book.book_author_id);
+                  const authorName = await resolveAuthorNames(book.book_author_id, book.book_title);
                   return {
                     book: {
                       _id: book._id,
@@ -449,7 +466,7 @@ function GenreRow({ genre, onSelectBook }: GenreRowProps) {
           
           const resolved = await Promise.all(
             matching.map(async (book) => {
-              const authorName = await resolveAuthorNames(book.book_author_id);
+              const authorName = await resolveAuthorNames(book.book_author_id, book.book_title);
               return {
                 _id: book._id,
                 book_title: book.book_title,
