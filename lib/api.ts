@@ -67,7 +67,7 @@ export const deleteBook = (id: string) => fetcher<void>(`/books/delete/${id}`, {
 
 // --- AUTHOR ROUTES ---
 export const getAuthors = () => fetcher<Author[]>('/authors');
-export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`); //
+export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`).catch(() => ({ success: false, data: undefined, message: 'Author not found' })); //
 export const searchAuthors = (name: string) => fetcher<Author[]>(`/authors/getbyname?q=${name}`); //
 export const createAuthor = (data: Partial<Author>) => fetcher<Author>('/authors', { method: 'POST', body: JSON.stringify(data) });
 export const updateAuthor = (id: string, data: Partial<Author>) => fetcher<Author>(`/authors/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -83,7 +83,7 @@ export const createCollection = (data: Partial<Collection>) => fetcher<Collectio
 export const deleteCollection = (id: string) => fetcher<void>(`/collections/delete/${id}`, { method: 'DELETE' });
 
 // --- BOOKMARKS ---
-export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`);
+export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`).catch(() => ({ success: false, data: undefined, message: 'Bookmark not found' }));
 
 // --- COMMENTS & NOTES ---
 export const createComment = (data: Partial<Comment>) => fetcher<Comment>('/comments', { method: 'POST', body: JSON.stringify(data) });
