@@ -164,7 +164,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#080B11] text-white flex flex-col relative overflow-x-hidden font-sans">
+    <main className="min-h-screen bg-[#080B11] text-white flex flex-col relative font-sans">
       {/* Scrollbar-none custom styling block */}
       <style dangerouslySetInnerHTML={{ __html: `
         .scrollbar-none::-webkit-scrollbar {
@@ -177,8 +177,8 @@ export default function HomePage() {
       `}} />
 
       {/* Background Decorative Glows */}
-      <div className="absolute -top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[160px] pointer-events-none z-0" />
-      <div className="absolute -bottom-1/4 right-1/4 w-[500px] h-[500px] bg-slate-800/10 rounded-full blur-[140px] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[160px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-slate-800/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* Top Navigation Bar */}
       <nav className="w-full max-w-[1200px] mx-auto px-6 md:px-12 py-6 flex items-center justify-between z-10 relative select-none">

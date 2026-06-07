@@ -57,7 +57,7 @@ export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`)
 export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`);
 
 // --- BOOK ROUTES ---
-export const getBooks = () => fetcher<Book[]>('/books');
+export const getBooks = () => fetcher<Book[]>('/books').catch((err) => ({ success: false, data: [] as Book[], message: err.message }));
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
 export const getBooksByAuthorId = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); // Added
 export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`);
