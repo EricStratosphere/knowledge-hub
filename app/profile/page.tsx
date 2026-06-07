@@ -136,6 +136,7 @@ export default function ProfilePage() {
   // Overlay state
   const [selectedBook, setSelectedBook] = useState<BookDetailData | null>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   // Fetch helper mapping for authors
   useEffect(() => {
@@ -301,13 +302,13 @@ export default function ProfilePage() {
   const handlePublishSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!user) return;
-    setErrorMsg(null);
+    setPublishError(null);
     setSuccessMsg(null);
 
     // Validate fields
-    if (!publishTitle.trim()) return setErrorMsg('Book title is required.');
-    if (publishSelectedGenres.length === 0) return setErrorMsg('Please select at least one genre.');
-    if (!publishSummary.trim()) return setErrorMsg('Book summary/description is required.');
+    if (!publishTitle.trim()) return setPublishError('Book title is required.');
+    if (publishSelectedGenres.length === 0) return setPublishError('Please select at least one genre.');
+    if (!publishSummary.trim()) return setPublishError('Book summary/description is required.');
 
     setUploadingPublish(true);
 
@@ -423,7 +424,7 @@ export default function ProfilePage() {
       // Refresh page collections data
       fetchUserData(activeUserObj._id);
     } catch (err: any) {
-      setErrorMsg(err.message || 'An error occurred during book publication.');
+      setPublishError(err.message || 'An error occurred during book publication.');
     } finally {
       setUploadingPublish(false);
     }
@@ -599,7 +600,10 @@ export default function ProfilePage() {
             </button>
 
             <button
-              onClick={() => setIsPublishModalOpen(true)}
+              onClick={() => {
+                setPublishError(null);
+                setIsPublishModalOpen(true);
+              }}
               className="px-6 py-3 bg-transparent border border-white/10 hover:border-white/20 hover:bg-white/[0.02] text-white/80 hover:text-white rounded-md text-xs font-semibold uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer"
             >
               {user?.is_writer ? 'Publish a Book' : 'Become A Writer!'}
@@ -713,7 +717,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={() => {
                   setIsPublishModalOpen(false);
-                  setErrorMsg(null);
+                  setPublishError(null);
                 }}
                 disabled={uploadingPublish}
                 className="text-white/60 hover:text-white text-lg font-medium p-1 transition cursor-pointer disabled:opacity-40"
@@ -738,6 +742,18 @@ export default function ProfilePage() {
             {/* Modal Form Content */}
             <div className="p-6 md:p-8 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               
+              {publishError && (
+                <div className="p-4 bg-[#2C151B] border border-[#F43F5E]/20 text-[#FDA4AF] rounded-xl text-xs flex items-center justify-between gap-3 shadow-md animate-fade-in text-left">
+                  <div className="flex items-center gap-2.5">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{publishError}</span>
+                  </div>
+                  <button onClick={() => setPublishError(null)} className="text-[#FDA4AF]/60 hover:text-[#FDA4AF] font-bold px-1.5 cursor-pointer">✕</button>
+                </div>
+              )}
+
               {uploadingPublish && (
                 <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-xs flex items-center gap-3 shadow-md animate-pulse">
                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
