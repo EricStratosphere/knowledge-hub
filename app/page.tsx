@@ -31,6 +31,14 @@ const resolveAuthorNames = async (authorIds: string[]): Promise<string> => {
   return filtered.length > 0 ? filtered.join(', ') : 'Unknown Author';
 };
 
+const cleanImageUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.startsWith('https://storage.cloud.google.com/')) {
+    return url.replace('https://storage.cloud.google.com/', 'https://storage.googleapis.com/');
+  }
+  return url;
+};
+
 const ALLOWED_GENRES = [
   'Fiction',
   'Non-Fiction',
@@ -93,7 +101,7 @@ export default function HomePage() {
             author_name: authorName,
             genre: found.genre,
             description: found.description,
-            image_url: found.image_url,
+            image_url: cleanImageUrl(found.image_url),
             pdf_url: found.pdf_url,
             rating: 4.8
           });
@@ -343,7 +351,7 @@ function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
                       author_name: authorName,
                       genre: book.genre,
                       description: book.description,
-                      image_url: book.image_url,
+                      image_url: cleanImageUrl(book.image_url),
                       pdf_url: book.pdf_url,
                       rating: 4.5
                     },
@@ -447,7 +455,7 @@ function GenreRow({ genre, onSelectBook }: GenreRowProps) {
                 author_name: authorName,
                 genre: book.genre,
                 description: book.description,
-                image_url: book.image_url,
+                image_url: cleanImageUrl(book.image_url),
                 pdf_url: book.pdf_url,
                 rating: 4.5
               };
