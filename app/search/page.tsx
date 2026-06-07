@@ -309,7 +309,7 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center p-6 md:p-12 relative overflow-hidden font-jakarta">
+    <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center p-6 md:p-12 relative font-jakarta">
       {/* Premium Font Injection and Keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -353,8 +353,8 @@ export default function SearchPage() {
       `}} />
 
       {/* Decorative High-End Background Glows */}
-      <div className="absolute -bottom-1/4 left-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[160px] pointer-events-none z-0" />
-      <div className="absolute -top-1/4 right-1/4 w-[500px] h-[500px] bg-slate-800/10 rounded-full blur-[140px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[160px] pointer-events-none z-0" />
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-slate-800/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
       {/* Top Navigation / Brand Header */}
       <header className="w-full max-w-6xl flex items-center justify-between mb-8 z-10 relative select-none h-12">

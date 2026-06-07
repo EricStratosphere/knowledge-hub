@@ -57,7 +57,7 @@ export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`)
 export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`);
 
 // --- BOOK ROUTES ---
-export const getBooks = () => fetcher<Book[]>('/books');
+export const getBooks = () => fetcher<Book[]>('/books').catch((err) => ({ success: false, data: [] as Book[], message: err.message }));
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
 export const getBooksByAuthorId = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); // Added
 export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`);
@@ -67,7 +67,7 @@ export const deleteBook = (id: string) => fetcher<void>(`/books/delete/${id}`, {
 
 // --- AUTHOR ROUTES ---
 export const getAuthors = () => fetcher<Author[]>('/authors');
-export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`); //
+export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`).catch(() => ({ success: false, data: undefined, message: 'Author not found' })); //
 export const searchAuthors = (name: string) => fetcher<Author[]>(`/authors/getbyname?q=${name}`); //
 export const createAuthor = (data: Partial<Author>) => fetcher<Author>('/authors', { method: 'POST', body: JSON.stringify(data) });
 export const updateAuthor = (id: string, data: Partial<Author>) => fetcher<Author>(`/authors/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -83,7 +83,7 @@ export const createCollection = (data: Partial<Collection>) => fetcher<Collectio
 export const deleteCollection = (id: string) => fetcher<void>(`/collections/delete/${id}`, { method: 'DELETE' });
 
 // --- BOOKMARKS ---
-export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`);
+export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`).catch(() => ({ success: false, data: undefined, message: 'Bookmark not found' }));
 
 // --- COMMENTS & NOTES ---
 export const createComment = (data: Partial<Comment>) => fetcher<Comment>('/comments', { method: 'POST', body: JSON.stringify(data) });

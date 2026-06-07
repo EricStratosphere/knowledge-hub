@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import BookCoverImage from './BookCoverImage';
 
 // Interface for Chapter structures
 export interface Chapter {
@@ -57,6 +58,18 @@ export default function BookDetailOverlay({
   onReadNow,
   onChapterSelect,
 }: BookDetailOverlayProps) {
+  // Prevent background scrolling when overlay is active
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Dual-Tab Interaction State switching between 'details' and 'chapters'
   const [activeTab, setActiveTab] = useState<'details' | 'chapters'>('details');
 
@@ -229,7 +242,7 @@ export default function BookDetailOverlay({
               onClick={() => setActiveTab('details')}
               className={`aspect-[3/4.4] w-full max-w-[200px] bg-slate-800 rounded-xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-300 hover:scale-[1.02] cursor-pointer`}
             >
-              <img
+              <BookCoverImage
                 src={book.image_url}
                 alt={book.book_title}
                 className="w-full h-full object-cover"
