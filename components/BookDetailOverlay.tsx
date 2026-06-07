@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import BookCoverImage from './BookCoverImage';
 
 // Interface for Chapter structures
 export interface Chapter {
@@ -229,7 +230,7 @@ export default function BookDetailOverlay({
               onClick={() => setActiveTab('details')}
               className={`aspect-[3/4.4] w-full max-w-[200px] bg-slate-800 rounded-xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.7)] border border-white/10 transition-transform duration-300 hover:scale-[1.02] cursor-pointer`}
             >
-              <img
+              <BookCoverImage
                 src={book.image_url}
                 alt={book.book_title}
                 className="w-full h-full object-cover"

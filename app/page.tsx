@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BookDetailOverlay, { BookDetailData } from '@/components/BookDetailOverlay';
+import BookCoverImage from '@/components/BookCoverImage';
 import * as api from '@/lib/api';
 import { Book } from '@/types';
 
@@ -226,7 +227,7 @@ export default function HomePage() {
                   onClick={() => handleOpenBook(featuredBook)}
                   className="aspect-[3/4.4] w-full max-w-[160px] md:max-w-[180px] bg-slate-800 rounded-xl overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.6)] border border-white/10 flex-shrink-0 transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
                 >
-                  <img
+                  <BookCoverImage
                     src={featuredBook.image_url}
                     alt={featuredBook.book_title}
                     className="w-full h-full object-cover"
@@ -413,7 +414,7 @@ function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
             onClick={() => onSelectBook(book)}
             className="aspect-[3/4.4] w-[120px] md:w-[140px] bg-[#121620]/60 rounded-xl overflow-hidden shadow-lg border border-white/10 flex-shrink-0 transition-transform duration-300 hover:scale-[1.03] cursor-pointer hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:border-blue-400/30"
           >
-            <img
+            <BookCoverImage
               src={book.image_url}
               alt={book.book_title}
               className="w-full h-full object-cover"
@@ -508,7 +509,7 @@ function GenreRow({ genre, onSelectBook }: GenreRowProps) {
               onClick={() => onSelectBook(book)}
               className="aspect-[3/4.4] w-[120px] md:w-[140px] bg-[#121620]/60 rounded-xl overflow-hidden shadow-lg border border-white/10 flex-shrink-0 transition-transform duration-300 hover:scale-[1.03] cursor-pointer hover:shadow-[0_0_15px_rgba(255,255,255,0.08)]"
             >
-              <img
+              <BookCoverImage
                 src={book.image_url}
                 alt={book.book_title}
                 className="w-full h-full object-cover"
