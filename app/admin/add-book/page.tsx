@@ -19,6 +19,12 @@ const ALLOWED_GENRES = [
 export default function AddBookPage() {
   const router = useRouter();
 
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isWriterOnly, setIsWriterOnly] = useState(false);
+  const [matchingAuthor, setMatchingAuthor] = useState<any | null>(null);
+
   // Form Field States
   const [title, setTitle] = useState('');
   const [authorId, setAuthorId] = useState('');
@@ -36,6 +42,58 @@ export default function AddBookPage() {
 
   // Dropdown reference for click-outside closure
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Authenticate user session and configure restrictions on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        const resolved = parsed.user || parsed.data || parsed;
+        if (resolved && resolved._id) {
+          setCurrentUser(resolved);
+          
+          if (resolved.is_admin) {
+            // Admin: editable author ID, bypasses locking
+            setIsWriterOnly(false);
+            setAuthChecking(false);
+          } else if (resolved.is_writer) {
+            // Writer: lock to their author profile name
+            setIsWriterOnly(true);
+            lookupAuthorProfile(resolved.username);
+          } else {
+            // Non-authorized user
+            setAuthChecking(false);
+          }
+        } else {
+          setAuthChecking(false);
+        }
+      } catch (err) {
+        console.error('Session loading error:', err);
+        setAuthChecking(false);
+      }
+    } else {
+      setAuthChecking(false);
+    }
+  }, []);
+
+  // Search authors by name matching the username
+  const lookupAuthorProfile = async (username: string) => {
+    try {
+      const res = await api.searchAuthors(username);
+      if (res.success && res.data && res.data.length > 0) {
+        const match = res.data.find(
+          (a) => a.name.toLowerCase() === username.toLowerCase()
+        ) || res.data[0];
+        setMatchingAuthor(match);
+        setAuthorId(match._id);
+      }
+    } catch (err) {
+      console.error('Failed lookup of author profile:', err);
+    } finally {
+      setAuthChecking(false);
+    }
+  };
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -65,7 +123,11 @@ export default function AddBookPage() {
 
     // Validation checks
     if (!title.trim()) return setErrorMsg('Book title is required.');
-    if (!authorId.trim()) return setErrorMsg('Author ID is required.');
+    if (isWriterOnly && !authorId && !matchingAuthor) {
+      // In writer mode with no matching author, we will create the author record first.
+    } else if (!authorId.trim()) {
+      return setErrorMsg('Author ID is required.');
+    }
     if (!datePublished) return setErrorMsg('Publication date is required.');
     if (selectedGenres.length === 0) return setErrorMsg('Please select at least one genre.');
     if (!imageUrl.trim()) return setErrorMsg('Cover image URL is required.');
@@ -75,10 +137,39 @@ export default function AddBookPage() {
     setIsLoading(true);
 
     try {
+      let finalAuthorId = authorId.trim();
+
+      // If writer account does not have a profile matching their username, create it on-the-fly
+      if (isWriterOnly && !finalAuthorId && currentUser) {
+        try {
+          const authorProfileRes = await api.createAuthor({
+            name: currentUser.username,
+            author_description: `Official author profile for ${currentUser.username}.`
+          });
+          if (authorProfileRes.success && authorProfileRes.data) {
+            finalAuthorId = authorProfileRes.data._id;
+            setAuthorId(finalAuthorId);
+            setMatchingAuthor(authorProfileRes.data);
+          } else {
+            throw new Error(authorProfileRes.message || 'Could not auto-create profile.');
+          }
+        } catch (createErr: any) {
+          setErrorMsg(`Failed to auto-generate writer profile: ${createErr.message}`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      if (!finalAuthorId) {
+        setErrorMsg('Author ID is required.');
+        setIsLoading(false);
+        return;
+      }
+
       // Build serialized payload mapping to database model contracts
       const payload = {
         book_title: title.trim(),
-        book_author_id: [authorId.trim()], // Wrapping single author ID into a 1-element string array payload
+        book_author_id: [finalAuthorId], // Wrapping single author ID into a 1-element string array payload
         date_published: datePublished,
         genre: selectedGenres,
         description: description.trim(),
@@ -90,9 +181,11 @@ export default function AddBookPage() {
 
       if (res.success) {
         setSuccessMsg(res.message || 'Book created successfully in the library suite!');
-        // Clear all fields on success
+        // Clear fields on success
         setTitle('');
-        setAuthorId('');
+        if (!isWriterOnly) {
+          setAuthorId('');
+        }
         setDatePublished('');
         setImageUrl('');
         setPdfUrl('');
@@ -108,28 +201,65 @@ export default function AddBookPage() {
     }
   };
 
+  // 1. Loading Authentication State Screen
+  if (authChecking) {
+    return (
+      <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center justify-center p-6 font-jakarta">
+        <svg className="animate-spin h-8 w-8 text-white mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <p className="text-xs text-white/45 tracking-[0.2em] uppercase font-medium">Verifying Authentication...</p>
+      </main>
+    );
+  }
+
+  // 2. Unauthenticated Screen
+  if (!currentUser) {
+    return (
+      <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center justify-center p-6 font-jakarta">
+        <section className="w-full max-w-[420px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-8 md:p-10 shadow-2xl text-center relative overflow-hidden animate-fade-in">
+          <h2 className="font-luxury-serif text-2xl font-light text-white tracking-wide mb-3 select-none">
+            Authentication Required
+          </h2>
+          <p className="text-xs text-white/40 leading-relaxed mb-6 font-light select-none">
+            Please sign in to access the Library Database Suite.
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full bg-white text-[#080B11] hover:bg-neutral-100 font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition-all duration-200 active:scale-95 cursor-pointer shadow-md"
+          >
+            Sign in
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  // 3. Unauthorized Screen (Neither Admin nor Writer)
+  if (!currentUser.is_admin && !currentUser.is_writer) {
+    return (
+      <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center justify-center p-6 font-jakarta">
+        <section className="w-full max-w-[420px] bg-gradient-to-br from-[#1C2230] via-[#121620] to-[#0A0D14] border border-white/[0.08] rounded-2xl p-8 md:p-10 shadow-2xl text-center relative overflow-hidden animate-fade-in">
+          <h2 className="font-luxury-serif text-2xl font-light text-white tracking-wide mb-3 select-none">
+            Access Denied
+          </h2>
+          <p className="text-xs text-white/40 leading-relaxed mb-6 font-light select-none">
+            Only authenticated authors and administrators are permitted to register library editions.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full bg-transparent border border-white/20 hover:border-white/40 text-white font-semibold py-3 rounded-md text-xs tracking-widest uppercase transition-all duration-200 active:scale-95 cursor-pointer"
+          >
+            Return Home
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#080B11] text-white flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden font-jakarta">
-      {/* Premium Font Injection and Keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-        
-        .font-luxury-serif {
-          font-family: 'Playfair Display', Georgia, serif;
-        }
-        .font-jakarta {
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}} />
-
       {/* Decorative Background Glows */}
       <div className="absolute -bottom-1/4 left-1/4 w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[160px] pointer-events-none z-0" />
       <div className="absolute -top-1/4 right-1/4 w-[500px] h-[500px] bg-slate-800/10 rounded-full blur-[140px] pointer-events-none z-0" />
@@ -211,7 +341,7 @@ export default function AddBookPage() {
             />
           </div>
 
-          {/* Author ID field (wrapping array) */}
+          {/* Author ID field (editable for Admin, read-only/locked for Writer) */}
           <div className="relative group transition-all duration-300">
             <label className="block text-[10px] font-medium tracking-[0.2em] text-white/40 uppercase mb-1 transition-colors duration-300 group-focus-within:text-white">
               Author Object ID
@@ -220,11 +350,30 @@ export default function AddBookPage() {
               type="text"
               value={authorId}
               onChange={(e) => setAuthorId(e.target.value)}
-              disabled={isLoading}
-              placeholder="e.g. 64b85c13e4b0258d4a7f1a92"
-              className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2 text-white placeholder-white/20 text-sm focus:ring-0 font-mono disabled:opacity-40"
-              required
+              disabled={isLoading || isWriterOnly}
+              placeholder={isWriterOnly ? (matchingAuthor ? matchingAuthor._id : 'Will auto-create profile') : 'e.g. 64b85c13e4b0258d4a7f1a92'}
+              className="w-full bg-transparent border-b border-white/20 focus:border-white focus:outline-none transition-all duration-300 py-2 text-white placeholder-white/20 text-sm focus:ring-0 font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+              required={!isWriterOnly}
             />
+            {isWriterOnly && (
+              <div className="mt-1.5">
+                {matchingAuthor ? (
+                  <p className="text-emerald-400/80 text-[10px] font-medium flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Locked to your writer profile: {matchingAuthor.name}
+                  </p>
+                ) : (
+                  <p className="text-amber-400/80 text-[10px] font-medium flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    No writer profile detected. A profile named "{currentUser?.username}" will be created on submission.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Date Published field */}
