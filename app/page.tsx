@@ -90,6 +90,7 @@ export default function HomePage() {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [collectionName, setCollectionName] = useState('');
   const [collections, setCollections] = useState<any[]>([]);
+  const [collectionError, setCollectionError] = useState<string | null>(null);
 
   // Fetch user collections on authentication success
   useEffect(() => {
@@ -111,6 +112,7 @@ export default function HomePage() {
   // Handler to add a new collection
   const handleAddCollection = async () => {
     if (!collectionName.trim() || !currentUser) return;
+    setCollectionError(null);
     try {
       const res = await api.createCollection({
         name: collectionName.trim(),
@@ -120,13 +122,14 @@ export default function HomePage() {
       if (res.success && res.data) {
         setCollections((prev) => [...prev, res.data]);
         setCollectionName('');
+        setCollectionError(null);
         setIsCollectionModalOpen(false);
       } else {
-        alert(res.message || 'Failed to create collection');
+        setCollectionError(res.message || 'Failed to create collection');
       }
     } catch (err: any) {
       console.error('Failed to create collection:', err);
-      alert(err.message || 'Failed to create collection');
+      setCollectionError(err.message || 'Failed to create collection');
     }
   };
 
@@ -450,6 +453,7 @@ export default function HomePage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setCollectionError(null);
                           setIsCollectionModalOpen(true);
                         }}
                         className="text-white/60 hover:text-white p-1 rounded hover:bg-white/5 transition-colors duration-200"
@@ -522,6 +526,7 @@ export default function HomePage() {
                 onClick={() => {
                   setIsCollectionModalOpen(false);
                   setCollectionName('');
+                  setCollectionError(null);
                 }}
                 aria-label="Close modal"
                 className="text-white/45 hover:text-white transition-colors duration-200 cursor-pointer p-1 rounded hover:bg-white/5"
@@ -549,12 +554,25 @@ export default function HomePage() {
               </button>
             </div>
 
+            {/* Validation Banner Messages */}
+            {collectionError && (
+              <div className="mb-4 p-3.5 bg-rose-950/45 border border-rose-500/20 text-rose-400/90 rounded-lg text-xs font-sans tracking-wide flex items-center gap-2 animate-fade-in text-left select-none">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{collectionError}</span>
+              </div>
+            )}
+
             {/* Input Box container */}
             <div className="bg-[#181D29] border border-white/[0.06] rounded-xl p-4 flex items-center">
               <input
                 type="text"
                 value={collectionName}
-                onChange={(e) => setCollectionName(e.target.value)}
+                onChange={(e) => {
+                  setCollectionName(e.target.value);
+                  if (collectionError) setCollectionError(null);
+                }}
                 placeholder="Enter collection name..."
                 className="w-full bg-transparent focus:outline-none text-white text-sm font-light placeholder-white/20 select-text focus:ring-0"
               />

@@ -3,31 +3,41 @@ import { Book, Author, ApiResponse, User, Bookmark, Note, Collection, Comment } 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// Helper function to handle fetch and errors
+// Helper function to handle fetch and errors gracefully without throwing
 async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
 
-  if (!res.ok) {
-    let errorMessage = `API error: ${res.status}`;
-    try {
-      const errorData = await res.json();
-      if (errorData && typeof errorData.message === 'string') {
-        errorMessage = errorData.message;
-      } else if (errorData && typeof errorData.error === 'string') {
-        errorMessage = errorData.error;
+    if (!res.ok) {
+      let errorMessage = `API error: ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        } else if (errorData && typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        }
+      } catch {
+        // Fallback if parsing fails or stream is empty
       }
-    } catch {
-      // Fallback if parsing fails or stream is empty
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
-    throw new Error(errorMessage);
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err?.message || 'Network error occurred.',
+    };
   }
-  return res.json();
 }
 // --- HEALTH CHECK ---
 export const healthCheck = () => fetcher<string>('/');
@@ -57,7 +67,10 @@ export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`)
 export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`);
 
 // --- BOOK ROUTES ---
-export const getBooks = () => fetcher<Book[]>('/books').catch((err) => ({ success: false, data: [] as Book[], message: err.message }));
+export const getBooks = () => fetcher<Book[]>('/books').then((res) => {
+  if (!res.success) return { success: false, data: [] as Book[], message: res.message };
+  return res;
+});
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
 export const getBooksByAuthorId = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); // Added
 export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`);
@@ -67,7 +80,10 @@ export const deleteBook = (id: string) => fetcher<void>(`/books/delete/${id}`, {
 
 // --- AUTHOR ROUTES ---
 export const getAuthors = () => fetcher<Author[]>('/authors');
-export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`).catch(() => ({ success: false, data: undefined, message: 'Author not found' })); //
+export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`).then((res) => {
+  if (!res.success) return { success: false, data: undefined, message: 'Author not found' };
+  return res;
+});
 export const searchAuthors = (name: string) => fetcher<Author[]>(`/authors/getbyname?q=${name}`); //
 export const createAuthor = (data: Partial<Author>) => fetcher<Author>('/authors', { method: 'POST', body: JSON.stringify(data) });
 export const updateAuthor = (id: string, data: Partial<Author>) => fetcher<Author>(`/authors/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -83,7 +99,10 @@ export const createCollection = (data: Partial<Collection>) => fetcher<Collectio
 export const deleteCollection = (id: string) => fetcher<void>(`/collections/delete/${id}`, { method: 'DELETE' });
 
 // --- BOOKMARKS ---
-export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`).catch(() => ({ success: false, data: undefined, message: 'Bookmark not found' }));
+export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`).then((res) => {
+  if (!res.success) return { success: false, data: undefined, message: 'Bookmark not found' };
+  return res;
+});
 
 // --- COMMENTS & NOTES ---
 export const createComment = (data: Partial<Comment>) => fetcher<Comment>('/comments', { method: 'POST', body: JSON.stringify(data) });
