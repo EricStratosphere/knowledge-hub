@@ -177,7 +177,7 @@ export default function HomePage() {
             author_name: 'Rick Riordan',
             genre: ['Fantasy'],
             description: "Twelve-year-old Percy Jackson is on the most dangerous quest of his life. With the help of a satyr and a daughter of Athena, Percy must journey across the United States to catch a thief who has stolen the original weapon of mass destruction – Zeus' master bolt.",
-            image_url: 'https://covers.openlibrary.org/b/id/10523487-L.jpg',
+            image_url: 'https://covers.openlibrary.org/b/id/12643807-L.jpg',
             pdf_url: 'https://luminary-api.example.com/books/percy-jackson.pdf',
             rating: 4.8
           });
@@ -191,7 +191,7 @@ export default function HomePage() {
           author_name: 'Rick Riordan',
           genre: ['Fantasy'],
           description: "Twelve-year-old Percy Jackson is on the most dangerous quest of his life. With the help of a satyr and a daughter of Athena, Percy must journey across the United States to catch a thief who has stolen the original weapon of mass destruction – Zeus' master bolt.",
-          image_url: 'https://covers.openlibrary.org/b/id/10523487-L.jpg',
+          image_url: 'https://covers.openlibrary.org/b/id/12643807-L.jpg',
           pdf_url: 'https://luminary-api.example.com/books/percy-jackson.pdf',
           rating: 4.8
         });
