@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import BookCoverImage from './BookCoverImage';
+import * as api from '@/lib/api';
+
 
 // Interface for Chapter structures
 export interface Chapter {
@@ -73,34 +75,8 @@ export default function BookDetailOverlay({
   // Dual-Tab Interaction State switching between 'details' and 'chapters'
   const [activeTab, setActiveTab] = useState<'details' | 'chapters'>('details');
 
-  // Reviews state hooks
-  const defaultMockReviews: BookReview[] = [
-    {
-      _id: 'rev-1',
-      username: 'Sarah_Readz',
-      rating: 5,
-      content: 'Absolutely spellbinding. The pacing was flawless and the mystery kept me hooked until the final page!',
-      createdAt: '2 days ago',
-      replies: [
-        {
-          _id: 'rep-1',
-          username: 'LoverOfLore',
-          content: 'Agreed! The ending had me completely shocked.',
-          createdAt: '1 day ago'
-        }
-      ]
-    },
-    {
-      _id: 'rev-2',
-      username: 'BookWorm99',
-      rating: 4,
-      content: 'A fantastic second installment. Loved the lore expansion around the Hogwarts houses.',
-      createdAt: '1 week ago',
-      replies: []
-    },
-  ];
-
-  const [reviewsList, setReviewsList] = useState<BookReview[]>(book.reviews || defaultMockReviews);
+  // Reviews state hooks (default to empty list for production cleanliness)
+  const [reviewsList, setReviewsList] = useState<BookReview[]>([]);
   const [inputRating, setInputRating] = useState<number>(5);
   const [inputText, setInputText] = useState<string>('');
 
@@ -108,47 +84,193 @@ export default function BookDetailOverlay({
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<string>('');
 
-  const handleReviewSubmit = () => {
+  // Authentication and user session states
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+
+  // Sync current user session on overlay open
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isOpen) {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const resolved = parsed.user || parsed.data || parsed;
+          if (resolved && resolved._id) {
+            setCurrentUser(resolved);
+            return;
+          }
+        } catch (err) {
+          console.error('Failed to parse user session in overlay:', err);
+        }
+      }
+      setCurrentUser(null);
+    }
+  }, [isOpen]);
+
+  // Load comments dynamically from backend
+  useEffect(() => {
+    if (isOpen && book._id) {
+      setIsLoadingComments(true);
+      api.getCommentsByBook(book._id)
+        .then((res) => {
+          if (res.success && res.data) {
+            const rawComments = res.data;
+            const reviews: BookReview[] = [];
+            const repliesMap: Record<string, ReviewReply[]> = {};
+
+            const getUsername = (c: any) => {
+              if (c.username) return c.username;
+              if (c.user_id && typeof c.user_id === 'object') return c.user_id.username;
+              if (typeof c.user_id === 'string') {
+                return `User_${c.user_id.slice(-4)}`;
+              }
+              return 'Reader';
+            };
+
+            const formatTime = (dateStr: string) => {
+              try {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                const diffHours = Math.floor(diffMins / 60);
+                if (diffHours < 24) return `${diffHours}h ago`;
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays}d ago`;
+              } catch {
+                return 'Recently';
+              }
+            };
+
+            rawComments.forEach((c: any) => {
+              if (!c.replying_to) {
+                reviews.push({
+                  _id: c._id,
+                  username: getUsername(c),
+                  rating: c.rating || 5,
+                  content: c.content,
+                  createdAt: c.createdAt ? formatTime(c.createdAt) : 'Recently',
+                  replies: []
+                });
+              } else {
+                const parentId = typeof c.replying_to === 'object' ? c.replying_to._id : c.replying_to;
+                if (!repliesMap[parentId]) {
+                  repliesMap[parentId] = [];
+                }
+                repliesMap[parentId].push({
+                  _id: c._id,
+                  username: getUsername(c),
+                  content: c.content,
+                  createdAt: c.createdAt ? formatTime(c.createdAt) : 'Recently'
+                });
+              }
+            });
+
+            reviews.forEach((r) => {
+              r.replies = repliesMap[r._id] || [];
+            });
+
+            setReviewsList(reviews);
+          } else {
+            setReviewsList([]);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load comments:', err);
+          setReviewsList([]);
+        })
+        .finally(() => {
+          setIsLoadingComments(false);
+        });
+    }
+  }, [isOpen, book._id]);
+
+  const handleReviewSubmit = async () => {
     if (!inputText.trim()) return;
+    if (!currentUser) {
+      alert('Please log in to submit a review.');
+      return;
+    }
 
-    const newReview: BookReview = {
-      _id: `rev-${Date.now()}`,
-      username: 'AnonymousReader',
-      rating: inputRating,
-      content: inputText.trim(),
-      createdAt: 'Just now',
-      replies: []
-    };
+    try {
+      const res = await api.createComment({
+        user_id: currentUser._id,
+        book_id: book._id,
+        rating: inputRating,
+        content: inputText.trim(),
+        like_count: 0,
+        replying_to: null
+      });
 
-    setReviewsList((prev) => [newReview, ...prev]);
-    setInputText('');
-    setInputRating(5);
+      if (res.success && res.data) {
+        const newReview: BookReview = {
+          _id: res.data._id,
+          username: currentUser.username,
+          rating: res.data.rating || inputRating,
+          content: res.data.content,
+          createdAt: 'Just now',
+          replies: []
+        };
+        setReviewsList((prev) => [newReview, ...prev]);
+        setInputText('');
+        setInputRating(5);
+      } else {
+        alert(res.message || 'Failed to submit comment');
+      }
+    } catch (err: any) {
+      console.error('Comment creation failed:', err);
+      alert(err.message || 'Failed to submit comment');
+    }
   };
 
-  const handleReplySubmit = (reviewId: string) => {
+  const handleReplySubmit = async (reviewId: string) => {
     if (!replyText.trim()) return;
+    if (!currentUser) {
+      alert('Please log in to reply.');
+      return;
+    }
 
-    const newReply: ReviewReply = {
-      _id: `rep-${Date.now()}`,
-      username: 'AnonymousReader',
-      content: replyText.trim(),
-      createdAt: 'Just now',
-    };
+    try {
+      const res = await api.createComment({
+        user_id: currentUser._id,
+        book_id: book._id,
+        rating: 5,
+        content: replyText.trim(),
+        like_count: 0,
+        replying_to: reviewId
+      });
 
-    setReviewsList((prev) =>
-      prev.map((r) => {
-        if (r._id === reviewId) {
-          return {
-            ...r,
-            replies: [...(r.replies || []), newReply],
-          };
-        }
-        return r;
-      })
-    );
+      if (res.success && res.data) {
+        const newReply: ReviewReply = {
+          _id: res.data._id,
+          username: currentUser.username,
+          content: res.data.content,
+          createdAt: 'Just now',
+        };
 
-    setActiveReplyId(null);
-    setReplyText('');
+        setReviewsList((prev) =>
+          prev.map((r) => {
+            if (r._id === reviewId) {
+              return {
+                ...r,
+                replies: [...(r.replies || []), newReply],
+              };
+            }
+            return r;
+          })
+        );
+        setActiveReplyId(null);
+        setReplyText('');
+      } else {
+        alert(res.message || 'Failed to submit reply');
+      }
+    } catch (err: any) {
+      console.error('Reply creation failed:', err);
+      alert(err.message || 'Failed to submit reply');
+    }
   };
 
   if (!isOpen) return null;
@@ -397,14 +519,15 @@ export default function BookDetailOverlay({
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Share your thoughts on this book..."
-                className="w-full bg-transparent border-b border-white/10 focus:border-white focus:outline-none transition-all duration-200 py-1 text-white placeholder-white/20 text-xs resize-none h-10 focus:ring-0"
+                disabled={!currentUser}
+                placeholder={currentUser ? "Share your thoughts on this book..." : "Please sign in to write a review..."}
+                className="w-full bg-transparent border-b border-white/10 focus:border-white focus:outline-none transition-all duration-200 py-1 text-white placeholder-white/20 text-xs resize-none h-10 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={handleReviewSubmit}
-                  disabled={!inputText.trim()}
+                  disabled={!inputText.trim() || !currentUser}
                   className="bg-white text-[#080B11] hover:bg-neutral-100 font-bold px-3 py-1.5 rounded text-[10px] tracking-wider uppercase transition-all duration-200 active:scale-[0.97] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   Submit
@@ -469,8 +592,9 @@ export default function BookDetailOverlay({
                         type="text"
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        placeholder={`Reply to ${review.username}...`}
-                        className="w-full bg-transparent border-b border-white/10 focus:border-white focus:outline-none transition-all duration-200 py-1 text-white placeholder-white/20 text-xs focus:ring-0"
+                        disabled={!currentUser}
+                        placeholder={currentUser ? `Reply to ${review.username}...` : "Please sign in to reply..."}
+                        className="w-full bg-transparent border-b border-white/10 focus:border-white focus:outline-none transition-all duration-200 py-1 text-white placeholder-white/20 text-xs focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <div className="flex justify-end gap-2">
                         <button
@@ -484,7 +608,7 @@ export default function BookDetailOverlay({
                         </button>
                         <button
                           onClick={() => handleReplySubmit(review._id)}
-                          disabled={!replyText.trim()}
+                          disabled={!replyText.trim() || !currentUser}
                           className="bg-white text-[#080B11] hover:bg-neutral-100 font-bold px-2 py-1 rounded text-[9px] tracking-wider uppercase transition-all duration-200 active:scale-[0.97] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           Submit

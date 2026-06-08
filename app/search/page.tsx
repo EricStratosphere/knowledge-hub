@@ -22,9 +22,7 @@ const mockBooks: BookDetailData[] = [
       { id: 'pj1-ch2', title: 'Chapter 2: Three Old Ladies Knit the Socks of Death', chapterNumber: 2 },
       { id: 'pj1-ch3', title: 'Chapter 3: Grover Unexpectedly Loses His Pants', chapterNumber: 3 },
     ],
-    reviews: [
-      { _id: 'rev-pj1-1', username: 'CampHalfBloodGuy', rating: 5, content: 'Best series opener ever. Rick Riordan is a genius!', createdAt: '3 days ago' }
-    ]
+    reviews: []
   },
   {
     _id: 'pj-2',

@@ -19,22 +19,7 @@ const mockBook: BookDetailData = {
     { id: 'ch3', title: 'Chapter 3: The Burrow', chapterNumber: 3 },
     { id: 'ch4', title: 'Chapter 4: At Flourish and Blotts', chapterNumber: 4 },
   ],
-  reviews: [
-    {
-      _id: 'rev-1',
-      username: 'GamerGuy45',
-      rating: 5,
-      content: 'Incredible book! Brings back memories.',
-      createdAt: '3 days ago',
-    },
-    {
-      _id: 'rev-2',
-      username: 'FictionLover',
-      rating: 4,
-      content: 'Nice pacing, the Chamber lore was very clean.',
-      createdAt: '2 weeks ago',
-    },
-  ],
+  reviews: [],
 };
 
 export default function BookDetailTestPage() {
