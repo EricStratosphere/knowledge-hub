@@ -6,6 +6,7 @@ export interface Author {
   author_description: string;
   createdAt: string;
   updatedAt: string;
+  author_img_url?: string;
 } 
 
 export interface Book {
@@ -41,6 +42,7 @@ export interface Collection {
   name: string;
   user_id: string;
   public: boolean;
+  copy_id?: string;
 }
 
 export interface Comment {

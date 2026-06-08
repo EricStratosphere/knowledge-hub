@@ -1,22 +1,43 @@
 // lib/api.ts
 import { Book, Author, ApiResponse, User, Bookmark, Note, Collection, Comment } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://luminary-backend-chi.vercel.app/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// Helper function to handle fetch and errors
+// Helper function to handle fetch and errors gracefully without throwing
 async function fetcher<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  try {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+      let errorMessage = `API error: ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        } else if (errorData && typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        }
+      } catch {
+        // Fallback if parsing fails or stream is empty
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err?.message || 'Network error occurred.',
+    };
   }
-  return res.json();
 }
 // --- HEALTH CHECK ---
 export const healthCheck = () => fetcher<string>('/');
@@ -27,15 +48,31 @@ export const login = (data: any) => fetcher<any>('/authenticate/login', { method
 export const refreshTokens = (data: any) => fetcher<any>('/authenticate/refresh', { method: 'POST', body: JSON.stringify(data) });
 export const signout = () => fetcher<void>('/authenticate/signout', { method: 'POST' });
 
+// --- OTP AUTHENTICATION ---
+// Request OTP for an existing user
+export const getOtp = (email: string) => 
+  fetcher<any>('/authenticate/get-otp', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Request OTP during the sign-up process
+export const getOtpSignup = (email: string) => 
+  fetcher<any>('/authenticate/get-otp-signup', { method: 'POST', body: JSON.stringify({ email }) });
+
+// Verify the numeric OTP code
+export const verifyOtp = (otp: number) => 
+  fetcher<any>('/authenticate/verify-otp', { method: 'POST', body: JSON.stringify({ otp }) });
+
 // --- USER ROUTES ---
 export const getUsers = () => fetcher<User[]>('/users');
 export const getUserById = (id: string) => fetcher<User>(`/users/getbyid/${id}`);
 export const searchUsers = (username: string) => fetcher<User[]>(`/users/getbyname?q=${username}`);
 
 // --- BOOK ROUTES ---
-export const getBooks = () => fetcher<Book[]>('/books');
+export const getBooks = () => fetcher<Book[]>('/books').then((res) => {
+  if (!res.success) return { success: false, data: [] as Book[], message: res.message };
+  return res;
+});
 export const getBookById = (id: string) => fetcher<Book>(`/books/getbyid/${id}`); //
-export const getBooksByAuthor = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`);
+export const getBooksByAuthorId = (authorId: string) => fetcher<Book[]>(`/books/getbyauthor/${authorId}`); // Added
 export const searchBooks = (title: string) => fetcher<Book[]>(`/books/getbyname?q=${title}`);
 export const createBook = (data: Partial<Book>) => fetcher<Book>('/books', { method: 'POST', body: JSON.stringify(data) });
 export const updateBook = (id: string, data: Partial<Book>) => fetcher<Book>(`/books/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -43,7 +80,10 @@ export const deleteBook = (id: string) => fetcher<void>(`/books/delete/${id}`, {
 
 // --- AUTHOR ROUTES ---
 export const getAuthors = () => fetcher<Author[]>('/authors');
-export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`); //
+export const getAuthorById = (id: string) => fetcher<Author>(`/authors/getbyid/${id}`).then((res) => {
+  if (!res.success) return { success: false, data: undefined, message: 'Author not found' };
+  return res;
+});
 export const searchAuthors = (name: string) => fetcher<Author[]>(`/authors/getbyname?q=${name}`); //
 export const createAuthor = (data: Partial<Author>) => fetcher<Author>('/authors', { method: 'POST', body: JSON.stringify(data) });
 export const updateAuthor = (id: string, data: Partial<Author>) => fetcher<Author>(`/authors/update/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -51,7 +91,7 @@ export const deleteAuthor = (id: string) => fetcher<void>(`/authors/delete/${id}
 
 // --- COLLECTIONS ---
 export const getCollectionEbooks = () => fetcher<any[]>('/collection-ebooks');
-export const getEbooksByCollectionId = (id: string) => fetcher<any[]>(`/collection-ebooks/getbycollectionid/${id}`);
+export const getEbooksByCollectionId = (collectionId: string) => fetcher<any[]>(`/collection-ebooks/getbycollectionid/${collectionId}`);
 export const addBookToCollection = (data: { collection_id: string, book_id: string }) => fetcher<any>('/collection-ebooks', { method: 'POST', body: JSON.stringify(data) });
 export const getUserCollections = (userId: string) => fetcher<Collection[]>(`/collections/user/${userId}`);
 export const searchCollections = (name: string) => fetcher<Collection[]>(`/collections/getbyname?q=${name}`);
@@ -59,7 +99,10 @@ export const createCollection = (data: Partial<Collection>) => fetcher<Collectio
 export const deleteCollection = (id: string) => fetcher<void>(`/collections/delete/${id}`, { method: 'DELETE' });
 
 // --- BOOKMARKS ---
-export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`);
+export const getBookmarksForBook = (bookId: string, userId: string) => fetcher<Bookmark>(`/bookmarks/book/${bookId}/user/${userId}`).then((res) => {
+  if (!res.success) return { success: false, data: undefined, message: 'Bookmark not found' };
+  return res;
+});
 
 // --- COMMENTS & NOTES ---
 export const createComment = (data: Partial<Comment>) => fetcher<Comment>('/comments', { method: 'POST', body: JSON.stringify(data) });
@@ -70,5 +113,5 @@ export const getNoteById = (id: string) => fetcher<Note>(`/notes/getbyid/${id}`)
 export const getNotesByBookAndUser = (bookId: string, userId: string) => fetcher<Note[]>(`/notes/book/${bookId}/user/${userId}`);
 
 // --- GEMINI CHATBOT ---
-export const getChatContext = (bookId: string, userId: string) => fetcher<any>(`/gemini-chatbot/conversation/${bookId}/${userId}`);
+export const getConversationContext = (bookId: string, userId: string) => fetcher<any>(`/gemini-chatbot/conversation/${bookId}/${userId}`); // Added
 export const sendChatPrompt = (data: any) => fetcher<any>('/gemini-chatbot/prompt-text', { method: 'POST', body: JSON.stringify(data) });
