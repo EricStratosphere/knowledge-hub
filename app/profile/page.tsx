@@ -129,6 +129,10 @@ export default function ProfilePage() {
   const [isPublishDropdownOpen, setIsPublishDropdownOpen] = useState(false);
   const publishDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Profile Dropdown States
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
   // Message states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -177,15 +181,18 @@ export default function ProfilePage() {
     }
   }, [authorsMap]);
 
-  // Click outside listener for publish dropdown
+  // Click outside listener for dropdowns
   useEffect(() => {
-    function handleClickOutsidePublish(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent) {
       if (publishDropdownRef.current && !publishDropdownRef.current.contains(event.target as Node)) {
         setIsPublishDropdownOpen(false);
       }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
     }
-    document.addEventListener('mousedown', handleClickOutsidePublish);
-    return () => document.removeEventListener('mousedown', handleClickOutsidePublish);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Load mock data fallbacks (only for guests)
@@ -194,6 +201,18 @@ export default function ProfilePage() {
     setNewUsername(mockUser.username);
     setCollections(mockCollections);
     setIsLoading(false);
+  };
+
+  // Sign out handler to clear state & session storage
+  const handleSignout = async () => {
+    try {
+      await api.signout();
+    } catch (err) {
+      console.warn('Backend signout call failed:', err);
+    }
+    localStorage.removeItem('user');
+    setUser(null);
+    router.push('/login');
   };
 
   // Sync user details and fetch collections from API
@@ -489,13 +508,32 @@ export default function ProfilePage() {
         </h1>
 
         {/* Right Nav Menu Profile Launcher mock matching image_5aee9e.png */}
-        <div className="flex items-center gap-2 select-none border border-white/[0.08] bg-white/[0.02] backdrop-blur-md rounded-full px-3 py-1 shadow-md hover:bg-white/[0.04] transition-all cursor-pointer">
-          <span className="text-[11px] font-medium tracking-wide text-white/50 pl-0.5">
-            {user?.username ? user.username.split(' ')[0] : 'Guest'}
-          </span>
-          <div className="w-7 h-7 rounded-full bg-slate-700/60 border border-white/20 flex items-center justify-center font-bold text-xs text-white/95">
-            {user?.username ? user.username.charAt(0).toUpperCase() : 'J'}
-          </div>
+        <div className="relative" ref={profileDropdownRef}>
+          <button
+            onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-2 select-none border border-white/[0.08] bg-white/[0.02] backdrop-blur-md rounded-full px-3 py-1 shadow-md hover:bg-white/[0.04] transition-all cursor-pointer focus:outline-none"
+          >
+            <span className="text-[11px] font-medium tracking-wide text-white/50 pl-0.5">
+              {user?.username ? user.username.split(' ')[0] : 'Guest'}
+            </span>
+            <div className="w-7 h-7 rounded-full bg-slate-700/60 border border-white/20 flex items-center justify-center font-bold text-xs text-white/95">
+              {user?.username ? user.username.charAt(0).toUpperCase() : 'J'}
+            </div>
+          </button>
+
+          {isProfileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-[#121620]/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-2xl z-50 animate-fade-in text-left overflow-hidden">
+              <button
+                onClick={handleSignout}
+                className="w-full text-left px-4 py-2.5 text-xs text-rose-400 hover:bg-white/5 hover:text-rose-300 font-medium transition duration-150 cursor-pointer flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
