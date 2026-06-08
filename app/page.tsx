@@ -76,6 +76,10 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
+  // Master Catalog State
+  const [allBooks, setAllBooks] = useState<BookDetailData[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+
   // Book of the Day State
   const [featuredBook, setFeaturedBook] = useState<BookDetailData | null>(null);
   const [featuredLoading, setFeaturedLoading] = useState(true);
@@ -147,30 +151,55 @@ export default function HomePage() {
     setAuthChecking(false);
   }, []);
 
-  // Fetch Book of the Day dynamically
+  // Fetch Master Catalog on mount to avoid redundant parallel connection loads
   useEffect(() => {
-    async function loadFeaturedBook() {
+    async function loadCatalog() {
       try {
+        setCatalogLoading(true);
+
+        // Pre-populate global author cache from DB to avoid N+1 queries during mapping
+        try {
+          const authorsRes = await api.getAuthors();
+          if (authorsRes.success && authorsRes.data) {
+            authorsRes.data.forEach((author) => {
+              authorCache[author._id] = author.name;
+            });
+          }
+        } catch (err) {
+          console.error('Failed to pre-populate author cache:', err);
+        }
+
         const res = await api.getBooks();
         if (res.success && res.data && res.data.length > 0) {
-          // Attempt to find Percy Jackson or default to the first cataloged book
-          const found = res.data.find((b) =>
-            b.book_title.toLowerCase().includes('percy jackson')
-          ) || res.data[0];
+          const mappedBooks: BookDetailData[] = await Promise.all(
+            res.data.map(async (book) => {
+              const authorName = await resolveAuthorNames(book.book_author_id, book.book_title);
+              return {
+                _id: book._id,
+                book_title: book.book_title,
+                author_name: authorName,
+                genre: book.genre,
+                description: book.description,
+                image_url: cleanImageUrl(book.image_url),
+                pdf_url: book.pdf_url,
+                rating: 4.5
+              };
+            })
+          );
+          setAllBooks(mappedBooks);
 
-          const authorName = await resolveAuthorNames(found.book_author_id, found.book_title);
+          // Find featured book dynamically (Percy Jackson or fallback to first)
+          const foundMapped = mappedBooks.find((b) =>
+            b.book_title.toLowerCase().includes('percy jackson')
+          ) || mappedBooks[0];
+
           setFeaturedBook({
-            _id: found._id,
-            book_title: found.book_title,
-            author_name: authorName,
-            genre: found.genre,
-            description: found.description,
-            image_url: cleanImageUrl(found.image_url),
-            pdf_url: found.pdf_url,
+            ...foundMapped,
             rating: 4.8
           });
         } else {
           // Use high-fidelity mock fallback if library database is empty
+          setAllBooks([]);
           setFeaturedBook({
             _id: 'featured-default',
             book_title: 'Percy Jackson and the Olympians: The Lightning Thief',
@@ -183,8 +212,8 @@ export default function HomePage() {
           });
         }
       } catch (err) {
-        console.error('Failed to load featured book:', err);
-        // Fallback
+        console.error('Failed to load catalog:', err);
+        setAllBooks([]);
         setFeaturedBook({
           _id: 'featured-default',
           book_title: 'Percy Jackson and the Olympians: The Lightning Thief',
@@ -196,11 +225,12 @@ export default function HomePage() {
           rating: 4.8
         });
       } finally {
+        setCatalogLoading(false);
         setFeaturedLoading(false);
       }
     }
 
-    loadFeaturedBook();
+    loadCatalog();
   }, []);
 
   // Handler to open book detail overlay
@@ -359,13 +389,13 @@ export default function HomePage() {
 
         {/* Section Row B - "Continue Reading" (Bookmarks Tracker) */}
         {!authChecking && currentUser && (
-          <BookmarksRow userId={currentUser._id} onSelectBook={handleOpenBook} />
+          <BookmarksRow userId={currentUser._id} onSelectBook={handleOpenBook} allBooks={allBooks} isLoading={catalogLoading} />
         )}
 
         {/* Dynamic Genre Rows Engine */}
         <section className="flex flex-col gap-8">
           {ALLOWED_GENRES.map((genre) => (
-            <GenreRow key={genre} genre={genre} onSelectBook={handleOpenBook} />
+            <GenreRow key={genre} genre={genre} onSelectBook={handleOpenBook} allBooks={allBooks} isLoading={catalogLoading} />
           ))}
         </section>
 
@@ -572,52 +602,46 @@ export default function HomePage() {
 interface BookmarksRowProps {
   userId: string;
   onSelectBook: (book: BookDetailData) => void;
+  allBooks: BookDetailData[];
+  isLoading: boolean;
 }
 
-function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
+function BookmarksRow({ userId, onSelectBook, allBooks, isLoading }: BookmarksRowProps) {
   const [bookmarks, setBookmarks] = useState<{ book: BookDetailData; page: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isLoading) return;
+
     async function loadBookmarks() {
       try {
-        // Fetch all books
-        const booksRes = await api.getBooks();
-        if (booksRes.success && booksRes.data) {
-          const list = booksRes.data;
-          
-          // Isolated Fault Isolation: check bookmarks in parallel defensively
-          const results = await Promise.all(
-            list.map(async (book): Promise<{ book: BookDetailData; page: number } | null> => {
-              try {
-                const markRes = await api.getBookmarksForBook(book._id, userId);
-                if (markRes.success && markRes.data) {
-                  const authorName = await resolveAuthorNames(book.book_author_id, book.book_title);
-                  return {
-                    book: {
-                      _id: book._id,
-                      book_title: book.book_title,
-                      author_name: authorName,
-                      genre: book.genre,
-                      description: book.description,
-                      image_url: cleanImageUrl(book.image_url),
-                      pdf_url: book.pdf_url,
-                      rating: 4.5
-                    },
-                    page: markRes.data.page
-                  };
-                }
-              } catch {
-                // Return null if bookmark fetch fails or returns 404
-              }
-              return null;
-            })
-          );
-
-          const filtered = results.filter((r): r is { book: BookDetailData; page: number } => r !== null);
-          setBookmarks(filtered);
+        if (allBooks.length === 0) {
+          setBookmarks([]);
+          setLoading(false);
+          return;
         }
+
+        // Isolated Fault Isolation: check bookmarks in parallel defensively
+        const results = await Promise.all(
+          allBooks.map(async (book): Promise<{ book: BookDetailData; page: number } | null> => {
+            try {
+              const markRes = await api.getBookmarksForBook(book._id, userId);
+              if (markRes.success && markRes.data) {
+                return {
+                  book,
+                  page: markRes.data.page
+                };
+              }
+            } catch {
+              // Return null if bookmark fetch fails or returns 404
+            }
+            return null;
+          })
+        );
+
+        const filtered = results.filter((r): r is { book: BookDetailData; page: number } => r !== null);
+        setBookmarks(filtered);
       } catch (err: any) {
         console.error('Bookmarks fetch pipeline failed:', err);
         setError(err.message);
@@ -627,9 +651,9 @@ function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
     }
 
     loadBookmarks();
-  }, [userId]);
+  }, [userId, allBooks, isLoading]);
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
       <section className="text-left animate-pulse">
         <div className="h-4 bg-white/10 w-32 rounded mb-4" />
@@ -681,50 +705,12 @@ function BookmarksRow({ userId, onSelectBook }: BookmarksRowProps) {
 interface GenreRowProps {
   genre: string;
   onSelectBook: (book: BookDetailData) => void;
+  allBooks: BookDetailData[];
+  isLoading: boolean;
 }
 
-function GenreRow({ genre, onSelectBook }: GenreRowProps) {
-  const [books, setBooks] = useState<BookDetailData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadGenreBooks() {
-      try {
-        const res = await api.getBooks();
-        if (res.success && res.data) {
-          // Filter matching category
-          const matching = res.data.filter((b) => b.genre.includes(genre));
-          
-          const resolved = await Promise.all(
-            matching.map(async (book) => {
-              const authorName = await resolveAuthorNames(book.book_author_id, book.book_title);
-              return {
-                _id: book._id,
-                book_title: book.book_title,
-                author_name: authorName,
-                genre: book.genre,
-                description: book.description,
-                image_url: cleanImageUrl(book.image_url),
-                pdf_url: book.pdf_url,
-                rating: 4.5
-              };
-            })
-          );
-          setBooks(resolved);
-        }
-      } catch (err: any) {
-        console.error(`Error loading category: ${genre}`, err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadGenreBooks();
-  }, [genre]);
-
-  if (loading) {
+function GenreRow({ genre, onSelectBook, allBooks, isLoading }: GenreRowProps) {
+  if (isLoading) {
     return (
       <section className="text-left animate-pulse">
         <div className="h-4 bg-white/10 w-24 rounded mb-4" />
@@ -737,6 +723,11 @@ function GenreRow({ genre, onSelectBook }: GenreRowProps) {
     );
   }
 
+  // Filter matching category using case-insensitive and whitespace-trimmed matching
+  const matchingBooks = allBooks.filter((book) =>
+    book.genre.some((g) => g.trim().toLowerCase() === genre.trim().toLowerCase())
+  );
+
   return (
     <section className="text-left animate-fade-in select-none">
       <div className="flex items-center gap-2 mb-4">
@@ -746,13 +737,13 @@ function GenreRow({ genre, onSelectBook }: GenreRowProps) {
         <span className="text-white/40 text-sm">▸</span>
       </div>
 
-      {books.length === 0 || error ? (
+      {matchingBooks.length === 0 ? (
         <p className="text-xs italic text-white/35 py-6">
           No titles cataloged under this category yet.
         </p>
       ) : (
         <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
-          {books.map((book) => (
+          {matchingBooks.map((book) => (
             <div
               key={book._id}
               onClick={() => onSelectBook(book)}
